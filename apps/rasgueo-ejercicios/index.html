@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ejercicios de Rasgueo — Cuatro venezolano</title>
+<style>
+  :root {
+    --bg: #eaeef2; --surface: #ffffff; --surface-2: #f4f7fa;
+    --ink: #2c3a45; --ink-soft: #5a6b7a; --ink-muted: #7e8e9d;
+    --line: #c5d0da; --line-soft: #dde4ea;
+    --accent: #5a7a94; --accent-hover: #46637a; --accent-soft: #dde6ee;
+    --warn: #c98a3c; --warn-soft: #fdf3e3;
+    --ok: #4a8756;
+    --shadow: 0 2px 8px rgba(44, 58, 69, 0.06);
+    --radius: 10px; --radius-lg: 14px;
+  }
+  [data-theme="dark"] {
+    --bg: #14181c; --surface: #1e242a; --surface-2: #262e36;
+    --ink: #e4eaef; --ink-soft: #a8b4c0; --ink-muted: #75828f;
+    --line: #39434c; --line-soft: #2a333b;
+    --accent: #8fb0cd; --accent-hover: #a9c4dc; --accent-soft: #2b3a47;
+    --warn: #e0b071; --warn-soft: #3a3024;
+    --ok: #7abf87;
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--ink);
+    min-height: 100vh; display: flex; flex-direction: column;
+    transition: background .2s, color .2s;
+  }
+
+  #appHeader {
+    padding: 32px 22px 18px; text-align: center;
+    border-bottom: 1px solid var(--line); background: var(--surface);
+    flex-shrink: 0; position: relative;
+  }
+  #appHeader .title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 32px; font-weight: 700; margin: 0 0 4px;
+    letter-spacing: -0.5px;
+  }
+  #appHeader .subtitle {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 16px; color: var(--ink-soft); margin: 0 0 4px;
+  }
+  #appHeader .author {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-style: italic; font-size: 20px; color: var(--ink-muted);
+    margin: 0;
+  }
+  #appHeader .theme-toggle {
+    position: absolute; top: 16px; right: 20px;
+    background: transparent; border: 1px solid var(--line); color: var(--ink);
+    border-radius: var(--radius); padding: 6px 10px; cursor: pointer; font-size: 14px;
+  }
+  #appHeader .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  body.practicando #appHeader { display: none; }
+
+  main { flex: 1; display: flex; flex-direction: column; }
+  body:not(.practicando) main {
+    padding: 30px 22px 40px; max-width: 560px; width: 100%; margin: 0 auto; gap: 16px;
+  }
+  body.practicando main {
+    padding: 12px; width: 100%; gap: 10px; overflow-y: auto; max-width: none;
+  }
+
+  .view { display: none; flex-direction: column; gap: 16px; }
+  body.practicando .view { gap: 10px; }
+  .view.active { display: flex; }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius-lg); padding: 16px 18px;
+  }
+  body.practicando .panel { padding: 12px 16px; }
+
+  .panel-title {
+    font-size: 11px; color: var(--ink-muted);
+    text-transform: uppercase; letter-spacing: 1.5px;
+    margin: 0 0 12px; text-align: center; font-weight: 600;
+  }
+
+  .ej-list { display: flex; flex-direction: column; gap: 8px; }
+  .ej-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 14px; border: 1px solid var(--line);
+    border-radius: var(--radius); background: var(--surface);
+    cursor: pointer; transition: border-color .15s, background .15s;
+    user-select: none;
+  }
+  .ej-item:hover { border-color: var(--accent); }
+  .ej-item.selected {
+    border-color: var(--accent); background: var(--accent-soft);
+  }
+  .ej-item .num {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 22px; font-weight: 700; color: var(--accent);
+    min-width: 32px; text-align: center;
+  }
+  .ej-item .info { flex: 1; min-width: 0; }
+  .ej-item .nombre {
+    font-size: 15px; font-weight: 600; color: var(--ink);
+    margin: 0 0 3px;
+  }
+  .ej-item .meta {
+    font-size: 12px; color: var(--ink-muted); letter-spacing: 0.3px;
+  }
+  .ej-item .check {
+    font-size: 18px; color: var(--ok); width: 22px;
+    text-align: center; flex-shrink: 0;
+  }
+  .ej-item .check.pendiente { color: var(--ink-muted); opacity: 0.4; }
+
+  .ej-item .mini-pattern {
+    display: flex; gap: 3px; margin-top: 6px;
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+  .ej-item .mini-celda {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px;
+    font-size: 14px; font-weight: 700;
+    color: var(--accent);
+    background: var(--surface-2);
+    border: 1px solid var(--line-soft);
+    border-radius: 4px;
+    line-height: 1;
+  }
+  .ej-item .mini-celda.mini-dash {
+    color: var(--ink-muted); background: transparent;
+    border-color: transparent; font-size: 12px;
+  }
+  .ej-item .mini-celda.mini-doble {
+    flex-direction: row; gap: 0; padding: 0 1px;
+    font-size: 11px; width: auto; min-width: 20px;
+  }
+  .ej-item.selected .mini-celda {
+    background: var(--surface); border-color: var(--accent);
+  }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label {
+    font-size: 11px; color: var(--ink-muted);
+    text-transform: uppercase; letter-spacing: 1px; font-weight: 600;
+  }
+  .field select {
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 11px 14px; font-size: 14px; font-family: inherit;
+    outline: none; cursor: pointer; width: 100%;
+    transition: border-color .15s;
+  }
+  .field select:focus { border-color: var(--accent); }
+
+  .compases-group { display: flex; gap: 8px; }
+  .compas-btn {
+    flex: 1; padding: 10px 0; border: 1px solid var(--line);
+    background: var(--surface); color: var(--ink-soft);
+    border-radius: var(--radius); cursor: pointer;
+    font-family: inherit; font-size: 14px; font-weight: 600;
+    transition: border-color .15s, background .15s, color .15s;
+    user-select: none;
+  }
+  .compas-btn:hover { border-color: var(--accent); }
+  .compas-btn.selected {
+    border-color: var(--accent); background: var(--accent); color: #fff;
+  }
+  [data-theme="dark"] .compas-btn.selected { color: #14181c; }
+
+  .btn {
+    background: var(--surface); border: 1px solid var(--line); color: var(--ink);
+    border-radius: var(--radius); font-family: inherit; font-size: 14px;
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px;
+    transition: background .15s, border-color .15s, color .15s, transform .08s;
+    user-select: none; -webkit-tap-highlight-color: transparent;
+  }
+  .btn.wide {
+    width: 100%; height: 56px; font-size: 16px; font-weight: 600;
+    background: var(--accent); color: #fff; border-color: var(--accent);
+    border-radius: var(--radius-lg);
+  }
+  .btn.wide:hover:not(:disabled) { background: var(--accent-hover); }
+  .btn.wide:disabled {
+    background: var(--line); color: var(--ink-muted);
+    border-color: var(--line); cursor: not-allowed;
+  }
+
+  .practica-header {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 12px; flex-wrap: wrap;
+  }
+  .practica-titulo {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 18px; font-weight: 700; margin: 0;
+    letter-spacing: -0.3px;
+  }
+  .practica-meta {
+    font-size: 13px; color: var(--ink-muted);
+    letter-spacing: 0.3px; margin: 2px 0 0;
+  }
+  .btn-back {
+    background: transparent; border: 1px solid var(--line); color: var(--ink-soft);
+    padding: 6px 12px; border-radius: var(--radius); cursor: pointer;
+    font-family: inherit; font-size: 12px; font-weight: 500;
+  }
+  .btn-back:hover { border-color: var(--accent); color: var(--accent); }
+
+  .pattern {
+    display: flex; gap: 6px; align-items: center; justify-content: center;
+    flex-wrap: wrap; margin: 8px 0;
+  }
+  .cell {
+    width: 52px; height: 80px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-size: 42px; line-height: 1;
+    border: 2px solid transparent; border-radius: var(--radius-lg);
+    transition: transform .12s, border-color .12s, background .12s, color .12s;
+    user-select: none; position: relative; padding-top: 14px;
+    background: var(--surface-2); border-color: var(--line);
+    color: var(--ink);
+  }
+  .cell.dash {
+    background: transparent; border-color: transparent;
+    color: var(--ink-muted); font-size: 36px; padding-top: 0;
+  }
+  .cell .flecha { font-size: 42px; line-height: 1; }
+  .cell .simbolo-arriba {
+    position: absolute; top: 2px; left: 0; right: 0;
+    text-align: center; font-size: 13px; font-weight: 700;
+    line-height: 1; color: var(--accent);
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+  .cell.dash .simbolo-arriba { display: none; }
+  body.practicando .cell { width: 56px; height: 84px; }
+  .cell.active {
+    border-color: var(--accent); background: var(--accent-soft); color: var(--accent);
+    transform: scale(1.08); box-shadow: 0 0 24px rgba(90, 122, 148, .35);
+  }
+
+  .practica-info {
+    display: flex; justify-content: space-around; align-items: center;
+    gap: 16px; flex-wrap: wrap; margin-top: 4px;
+    font-size: 13px; color: var(--ink-muted);
+    letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .practica-info b {
+    color: var(--ink); font-weight: 700; font-size: 15px;
+    letter-spacing: 0; text-transform: none;
+  }
+
+  .transport {
+    display: flex; gap: 10px; align-items: center; justify-content: center;
+    flex-wrap: wrap; width: 100%;
+  }
+  .btn.transport { min-width: 130px; height: 48px; padding: 0 16px; font-weight: 600; }
+  .btn.transport:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .btn.transport:active:not(:disabled) { background: var(--accent-soft); transform: scale(.97); }
+  .btn.transport:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn.transport.primary {
+    background: var(--accent); color: #fff; border-color: var(--accent);
+  }
+  .btn.transport.primary:hover:not(:disabled) {
+    background: var(--accent-hover); color: #fff;
+  }
+  .btn.metro { margin-left: auto; }
+  .btn.metro.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.bucle.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  body.practicando .btn.transport { min-width: 110px; height: 44px; font-size: 13px; }
+
+  .sliders-compact {
+    display: grid; gap: 12px; grid-template-columns: 1fr;
+    width: 100%;
+  }
+  .row {
+    display: grid; grid-template-columns: 100px 1fr auto;
+    gap: 10px; align-items: center;
+    font-size: 13px; color: var(--ink-muted);
+  }
+  .row input[type=range] { width: 100%; accent-color: var(--accent); }
+  .num-wrap { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+  .num-input {
+    width: 60px; text-align: right;
+    background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: 6px; color: var(--ink); font-family: inherit;
+    font-size: 13px; font-weight: 600; padding: 4px 6px;
+    outline: none; transition: border-color .15s, background .15s;
+  }
+  .num-input:focus { border-color: var(--accent); background: var(--surface); }
+  .num-unit { font-size: 12px; color: var(--ink-muted); min-width: 26px; }
+
+  .diagram-wrap {
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 4px 0; min-height: 260px; gap: 8px;
+  }
+  .diagram-nombre {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 20px; font-weight: 700; color: var(--ink);
+    letter-spacing: 0.5px; text-align: center;
+  }
+  .diagram-nombre .corto {
+    color: var(--accent);
+  }
+  .diagram-svg {
+    width: 100%; max-width: 220px; height: auto;
+    margin: 0 auto; display: block; pointer-events: none;
+  }
+
+  .status-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 16px; flex-wrap: wrap;
+    font-size: 13px; color: var(--ink-muted);
+    letter-spacing: 0.3px;
+  }
+  .status-bar b { color: var(--ink); font-weight: 700; }
+  .status-bar .estado { display: inline-flex; align-items: center; gap: 6px; }
+  .status-bar .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--ink-muted); display: inline-block;
+  }
+  .status-bar .dot.ready { background: var(--accent); }
+  .status-bar .dot.playing { background: var(--warn); animation: pulse 1s infinite; }
+  .status-bar .dot.done { background: var(--ok); }
+  @keyframes pulse { 50% { opacity: 0.4; } }
+
+  .hint-evaluar {
+    font-size: 11px; color: var(--ink-muted); text-align: center;
+    margin-top: 6px; font-style: italic;
+  }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    display: none; align-items: center; justify-content: center;
+    z-index: 100; padding: 20px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--surface); border-radius: var(--radius-lg);
+    max-width: 400px; width: 100%; padding: 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .modal h3 { margin: 0 0 10px; font-size: 18px; }
+  .modal p { margin: 0 0 18px; font-size: 14px; color: var(--ink-soft); line-height: 1.5; }
+  .modal button {
+    width: 100%; padding: 12px; background: var(--accent); color: #fff;
+    border: none; border-radius: var(--radius); cursor: pointer;
+    font-family: inherit; font-size: 14px; font-weight: 600;
+  }
+  .modal button:hover { background: var(--accent-hover); }
+
+  @media (max-width: 600px) {
+    #appHeader .title { font-size: 24px; }
+    #appHeader .author { font-size: 16px; }
+    body:not(.practicando) main { padding: 20px 14px 30px; }
+    body.practicando .cell { width: 42px; height: 64px; font-size: 30px; padding-top: 9px; }
+    body.practicando .cell .flecha { font-size: 30px; }
+    body.practicando .cell .simbolo-arriba { font-size: 10px; top: 0; }
+    .btn.transport { min-width: 100px; font-size: 12px; }
+    .diagram-wrap { min-height: 200px; }
+  }
+</style>
+</head>
+<body>
+  <header id="appHeader">
+    <button class="theme-toggle" id="btnTheme" title="Tema">🌙</button>
+    <h1 class="title">Ejercicios de Rasgueo</h1>
+    <p class="subtitle">Cuatro venezolano</p>
+    <p class="author">Ángel Martínez</p>
+  </header>
+
+  <main>
+    <section class="view active" id="viewConfig">
+
+      <div class="panel">
+        <h2 class="panel-title">Elige un ejercicio</h2>
+        <div class="ej-list" id="ejList"></div>
+      </div>
+
+      <div class="panel">
+        <div class="field" style="margin-bottom: 14px;">
+          <label for="selAcorde">Acorde de referencia</label>
+          <select id="selAcorde"></select>
+        </div>
+
+        <div class="field">
+          <label>Repeticiones del ejercicio</label>
+          <div class="compases-group" id="compasesGroup">
+            <button class="compas-btn" data-compases="2">2</button>
+            <button class="compas-btn selected" data-compases="4">4</button>
+            <button class="compas-btn" data-compases="8">8</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn wide" id="btnPracticar">Practicar →</button>
+    </section>
+
+    <section class="view" id="viewPractica">
+
+      <div class="panel">
+        <div class="practica-header">
+          <button class="btn-back" id="btnBack">← Cambiar</button>
+          <div style="flex: 1; text-align: center;">
+            <div class="practica-titulo" id="practicaTitulo">—</div>
+            <div class="practica-meta" id="practicaMeta">—</div>
+          </div>
+          <div style="width: 80px;"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="pattern" id="pattern"></div>
+        <div class="practica-info">
+          <span>Ejercicio <b id="infoCompas">0/0</b></span>
+          <span>Acorde <b id="infoAcorde">—</b></span>
+          <span>BPM <b id="infoBpm">70</b></span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="diagram-wrap" id="diagramWrap"></div>
+      </div>
+
+      <div class="panel">
+        <div class="transport">
+          <button class="btn transport primary" id="btnEscuchar">▶ Escuchar</button>
+          <button class="btn transport" id="btnParar">⏹ Parar</button>
+          <button class="btn transport" id="btnEvaluar" disabled>🎤 Modo Evaluar</button>
+          <button class="btn transport bucle" id="btnBucle">🔁 Bucle</button>
+          <button class="btn transport metro" id="btnMetro">🔕 Metrónomo</button>
+        </div>
+        <div class="hint-evaluar">El modo evaluar estará disponible próximamente</div>
+      </div>
+
+      <div class="panel">
+        <div class="sliders-compact">
+          <div class="row">
+            <label for="sBpm">Velocidad</label>
+            <input id="sBpm" type="range" min="40" max="220" value="70" step="1">
+            <span class="num-wrap">
+              <input class="num-input" id="nBpm" type="text" inputmode="numeric" value="70">
+              <span class="num-unit">BPM</span>
+            </span>
+          </div>
+          <div class="row">
+            <label for="sVol">Volumen</label>
+            <input id="sVol" type="range" min="0" max="100" value="70" step="1">
+            <span class="num-wrap">
+              <input class="num-input" id="nVol" type="text" inputmode="numeric" value="70">
+              <span class="num-unit">%</span>
+            </span>
+          </div>
+          <div class="row">
+            <label for="sBajo">Bajo</label>
+            <input id="sBajo" type="range" min="0" max="100" value="85" step="1">
+            <span class="num-wrap">
+              <input class="num-input" id="nBajo" type="text" inputmode="numeric" value="85">
+              <span class="num-unit">%</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="status-bar">
+          <span class="estado">
+            <span class="dot ready" id="statusDot"></span>
+            <span id="statusText">Listo</span>
+          </span>
+          <span>Puntaje: <b id="statusPuntaje">—</b></span>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal">
+      <h3 id="modalTitle">Aviso</h3>
+      <p id="modalText">Mensaje</p>
+      <button id="modalBtn">Entendido</button>
+    </div>
+  </div>
+
+<script>
+/* ============================================================
+   EJERCICIOS
+   ============================================================ */
+const EJERCICIOS = [
+  { id: 1,  nombre: 'Bajos continuos',     compas: '3/4', bpm: 60, celdas: ['b','b','b','b','b','b'] },
+  { id: 2,  nombre: 'Subidas continuas',   compas: '3/4', bpm: 60, celdas: ['s','s','s','s','s','s'] },
+  { id: 3,  nombre: 'Alternado continuo',  compas: '3/4', bpm: 70, celdas: ['b','s','b','s','b','s'] },
+  { id: 4,  nombre: 'Bajos con pausa',     compas: '3/4', bpm: 70, celdas: ['b','b','—','b','b','—'] },
+  { id: 5,  nombre: 'Subidas con pausa',   compas: '3/4', bpm: 70, celdas: ['s','s','—','s','s','—'] },
+  { id: 6,  nombre: 'Par bajando',         compas: '3/4', bpm: 70, celdas: ['b','s','—','b','s','—'] },
+  { id: 7,  nombre: 'Par subiendo',        compas: '3/4', bpm: 70, celdas: ['s','b','—','s','b','—'] },
+  { id: 8,  nombre: 'Pares simétricos',    compas: '3/4', bpm: 70, celdas: ['b','s','—','s','b','—'] },
+  { id: 9,  nombre: 'Pares simétricos II', compas: '3/4', bpm: 70, celdas: ['s','b','—','b','s','—'] },
+  { id: 10, nombre: 'Alternado 5/8',       compas: '5/8', bpm: 80, celdas: ['b','s','b','s','b'] }
+];
+
+/* ============================================================
+   VOICINGS
+   ============================================================ */
+const VOICINGS = [];
+function V(r,t,c,tr,d,b){ VOICINGS.push({r,t,c,tr,d,b:b||null}); }
+V('Do','Mayor','C',[3,2,1,1],[3,2,1,1],{cuerdas:[1,2],traste:1,dedo:1});
+V('Do','séptima','C7',[1,2,1,1],[1,2,1,1],{cuerdas:[1,2,3,4],traste:1,dedo:1});
+V('Do','menor','Cm',[3,1,1,1],[3,1,1,1],{cuerdas:[1,2,3,4],traste:1,dedo:1});
+V('Re','Mayor','D',[0,0,0,3],[0,0,0,4]);
+V('Re','séptima','D7',[0,0,0,1],[0,0,0,1]);
+V('Re','menor','Dm',[0,3,3,3],[0,2,3,4]);
+V('Mi','Mayor','E',[2,2,2,0],[2,3,4,0]);
+V('Mi','séptima','E7',[2,2,2,3],[1,2,3,4]);
+V('Mi','menor','Em',[2,2,1,0],[2,3,1,0]);
+V('Fa','Mayor','F',[0,3,3,1],[0,2,3,1]);
+V('Fa','séptima','F7',[3,3,3,4],[1,2,3,4]);
+V('Fa','menor','Fm',[3,3,2,1],[3,4,2,1],{cuerdas:[1,2,3,4],traste:1,dedo:1});
+V('Sol','Mayor','G',[2,0,1,0],[2,0,1,0]);
+V('Sol','séptima','G7',[2,3,1,3],[2,3,1,4]);
+V('Sol','menor','Gm',[1,0,1,3],[1,0,2,4]);
+V('La','Mayor','A',[0,2,3,2],[0,1,3,2]);
+V('La','séptima','A7',[0,2,1,2],[0,2,1,3]);
+V('La','menor','Am',[0,2,3,1],[0,2,3,1]);
+V('Si','Mayor','B',[2,1,0,0],[2,1,0,0]);
+V('Si','séptima','B7',[0,1,0,0],[0,1,0,0]);
+V('Si','menor','Bm',[2,0,0,0],[2,0,0,0]);
+
+const SEMITONO_RAIZ = {'Do':0,'Do#/Reb':1,'Re':2,'Re#/Mib':3,'Mi':4,'Fa':5,'Fa#/Solb':6,'Sol':7,'Sol#/Lab':8,'La':9,'La#/Sib':10,'Si':11};
+const TUNING_FREQS = [220.00, 293.66, 369.99, 246.94];
+
+/* ============================================================
+   PARSEO
+   ============================================================ */
+function normalizarCelda(c) {
+  return c.replace(/b/g, '↓').replace(/s/g, '↑');
+}
+function parsearGolpeSimple(flecha, modificador, acentoStr) {
+  const acento = acentoStr === '>';
+  if (modificador === 'x') {
+    return { tipo:'efecto', efecto: flecha === '↑' ? 'chasquido-arriba' : 'chasquido-abajo', flecha, acento };
+  }
+  return { tipo:'gesto', flecha, rasgueo: modificador === 'r', acento };
+}
+function parsearCelda(celda) {
+  if (celda === '—' || celda === '–' || celda === '-') return { tipo:'silencio' };
+  const c = normalizarCelda(celda);
+  const mDoble = c.match(/^([↓↑])([rax]?)(>?)([↓↑])([rax]?)(>?)$/);
+  if (mDoble) {
+    return { tipo:'doble', golpes: [
+      parsearGolpeSimple(mDoble[1], mDoble[2], mDoble[3]),
+      parsearGolpeSimple(mDoble[4], mDoble[5], mDoble[6])
+    ]};
+  }
+  const m = c.match(/^([↓↑])([rax]?)(>?)$/);
+  if (!m) return { tipo:'error', celda };
+  return parsearGolpeSimple(m[1], m[2], m[3]);
+}
+function parsearPatron(celdas) {
+  const eventos = [];
+  for (let i = 0; i < celdas.length; i++) {
+    const celda = celdas[i];
+    const sigEsGuion = celdas[i+1] === '—' || celdas[i+1] === '–' || celdas[i+1] === '-';
+    if (celda === '—' || celda === '–' || celda === '-') {
+      eventos.push({ tipo:'silencio', corcheas:1, celdas:[i] });
+      continue;
+    }
+    const g = parsearCelda(celda);
+    if (g.tipo === 'doble') {
+      eventos.push({ ...g.golpes[0], corcheas:0.5, celdas:[i] });
+      eventos.push({ ...g.golpes[1], corcheas:0.5, celdas:[i] });
+      continue;
+    }
+    if (sigEsGuion && g.tipo !== 'silencio' && g.tipo !== 'error') {
+      eventos.push({ ...g, corcheas:2, celdas:[i, i+1] });
+      i++;
+    } else {
+      eventos.push({ ...g, corcheas:1, celdas:[i] });
+    }
+  }
+  return eventos;
+}
+
+/* ============================================================
+   AUDIO
+   ============================================================ */
+let ctx, masterGain, comp, metroBus, bajoBus;
+const activeSources = new Set();
+let volumen = 0.70;
+let volumenBajo = 0.85;
+const DELAYS = { golpe: 4, rasgueo: 35 };
+
+function initAudio() {
+  if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = ctx.createGain(); masterGain.gain.value = volumen;
+  comp = ctx.createDynamicsCompressor();
+  comp.threshold.value = -14; comp.knee.value = 24; comp.ratio.value = 3;
+  comp.attack.value = 0.004; comp.release.value = 0.18;
+  masterGain.connect(comp).connect(ctx.destination);
+  metroBus = ctx.createGain(); metroBus.gain.value = volumen; metroBus.connect(ctx.destination);
+  bajoBus = ctx.createGain(); bajoBus.gain.value = volumenBajo; bajoBus.connect(ctx.destination);
+}
+function makeKSBuffer(freq, decayS, attackMs) {
+  const sr = ctx.sampleRate;
+  const N = Math.max(2, Math.round(sr / freq));
+  const dur = decayS + 0.30;
+  const len = Math.max(N * 2, Math.floor(sr * dur));
+  const data = new Float32Array(len);
+  const loopIters = Math.max(1, sr * decayS / N);
+  const damp = Math.pow(0.001, 1 / loopIters);
+  const delay = new Float32Array(N);
+  let prev = 0;
+  for (let i = 0; i < N; i++) { const r = Math.random() * 2 - 1; prev = prev * 0.85 + r * 0.15; delay[i] = prev; }
+  let maxAbs = 0;
+  for (let i = 0; i < N; i++) maxAbs = Math.max(maxAbs, Math.abs(delay[i]));
+  if (maxAbs > 0) for (let i = 0; i < N; i++) delay[i] /= maxAbs * 2;
+  let idx = 0;
+  for (let i = 0; i < len; i++) {
+    const cur = delay[idx]; const nxt = delay[(idx + 1) % N];
+    delay[idx] = (cur + nxt) * 0.5 * damp; data[i] = cur;
+    idx = (idx + 1) % N;
+  }
+  const atk = Math.min(Math.floor(sr * attackMs / 1000), len);
+  for (let i = 0; i < atk; i++) { const t = i / atk; data[i] *= t*t*(3-2*t); }
+  const fi = Math.min(50, len); for (let i = 0; i < fi; i++) data[i] *= i / fi;
+  const fo = Math.min(Math.floor(sr * 0.12), len); for (let i = 0; i < len; i++) data[len-1-i] *= Math.min(1, i / fo);
+  const buf = ctx.createBuffer(1, len, sr); buf.getChannelData(0).set(data); return buf;
+}
+function makeKSBufferBajo(freq, durS) {
+  const sr = ctx.sampleRate;
+  const N = Math.max(2, Math.round(sr / freq));
+  const len = Math.max(N * 2, Math.floor(sr * durS));
+  const data = new Float32Array(len);
+  const loopIters = Math.max(1, sr * durS / N);
+  const damp = Math.pow(0.001, 1 / loopIters);
+  const delay = new Float32Array(N);
+  let prev = 0;
+  for (let i = 0; i < N; i++) {
+    const r = Math.random() * 2 - 1;
+    prev = prev * 0.75 + r * 0.25;
+    delay[i] = prev;
+  }
+  let maxAbs = 0;
+  for (let i = 0; i < N; i++) maxAbs = Math.max(maxAbs, Math.abs(delay[i]));
+  if (maxAbs > 0) for (let i = 0; i < N; i++) delay[i] /= maxAbs * 2;
+  let idx = 0;
+  for (let i = 0; i < len; i++) {
+    const cur = delay[idx];
+    const nxt = delay[(idx + 1) % N];
+    delay[idx] = (cur + nxt) * 0.5 * damp;
+    data[i] = cur;
+    idx = (idx + 1) % N;
+  }
+  const atk = Math.min(Math.floor(sr * 0.003), len);
+  for (let i = 0; i < atk; i++) { const t = i / atk; data[i] *= t * t * (3 - 2 * t); }
+  const fi = Math.min(50, len); for (let i = 0; i < fi; i++) data[i] *= i / fi;
+  const fo = Math.min(Math.floor(sr * 0.06), len); for (let i = 0; i < fo; i++) data[len - 1 - i] *= i / fo;
+  const buf = ctx.createBuffer(1, len, sr); buf.getChannelData(0).set(data); return buf;
+}
+function playStringKS(freq, gainScale, when, params) {
+  const buf = makeKSBuffer(freq, params.decay, params.attack);
+  const dur = params.decay + 0.30;
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=params.filter; lp.Q.value=0.7;
+  const g = ctx.createGain(); g.gain.value = 0.30 * gainScale;
+  src.connect(lp).connect(g).connect(masterGain);
+  src.start(when); src.stop(when + dur);
+  const node = { src, gain: g }; activeSources.add(node); src.onended = () => activeSources.delete(node);
+}
+function tocarGesto(flecha, voicing, when, { rasgueo = false, acento = false } = {}) {
+  const trastes = voicing.tr;
+  const indices = flecha === '↑' ? [0,1,2,3] : [3,2,1,0];
+  const delayMs = rasgueo ? DELAYS.rasgueo : DELAYS.golpe;
+  const stepS = delayMs / 1000;
+  const t0 = rasgueo ? when - 0.025 : when;
+  indices.forEach((idx, i) => {
+    const traste = trastes[idx];
+    const t = t0 + i * stepS;
+    const cuerda = TUNING_FREQS[idx];
+    const freq = cuerda * Math.pow(2, traste / 12);
+    playStringKS(freq, acento ? 1.4 : 1.0, t, { decay: 3.0, filter: 3200, attack: 6 });
+  });
+}
+function tocarBajo(voicing, when, durS) {
+  const raizPc = SEMITONO_RAIZ[voicing.r] !== undefined ? SEMITONO_RAIZ[voicing.r] : 0;
+  const frecBase = 261.63 * Math.pow(2, raizPc / 12);
+  const frecObjetivo = frecBase / 4;
+  const buf = makeKSBufferBajo(frecObjetivo, durS);
+  const dur = durS + 0.05;
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 800; lp.Q.value = 0.7;
+  const body = ctx.createBiquadFilter(); body.type = 'peaking'; body.frequency.value = 120; body.Q.value = 1; body.gain.value = 4;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0, when);
+  g.gain.linearRampToValueAtTime(0.9, when + 0.003);
+  src.connect(lp).connect(body).connect(g).connect(bajoBus);
+  src.start(when); src.stop(when + dur);
+  const node = { src, gain: g }; activeSources.add(node); src.onended = () => activeSources.delete(node);
+}
+function releaseAll(fade = 0.09) {
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  activeSources.forEach(({ src, gain }) => {
+    try {
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(gain.gain.value, now);
+      gain.gain.linearRampToValueAtTime(0, now + fade);
+      src.stop(now + fade + 0.02);
+    } catch (e) {}
+  });
+}
+let _metroNoiseBuf = null;
+function getMetroNoiseBuffer() {
+  if (_metroNoiseBuf) return _metroNoiseBuf;
+  const nlen = Math.floor(ctx.sampleRate * 0.008);
+  const nb = ctx.createBuffer(1, nlen, ctx.sampleRate);
+  const nd = nb.getChannelData(0);
+  const tau = ctx.sampleRate * 0.0012;
+  for (let i = 0; i < nlen; i++) nd[i] = (Math.random() * 2 - 1) * Math.exp(-i / tau);
+  _metroNoiseBuf = nb;
+  return nb;
+}
+function scheduleMetro(when, isAccent) {
+  const f1 = isAccent ? 2400 : 1800;
+  const osc1 = ctx.createOscillator();
+  osc1.type = 'sine';
+  osc1.frequency.setValueAtTime(f1, when);
+  osc1.frequency.exponentialRampToValueAtTime(f1 * 0.7, when + 0.03);
+  const g1 = ctx.createGain();
+  const peak1 = isAccent ? 0.55 : 0.35;
+  g1.gain.setValueAtTime(0, when);
+  g1.gain.linearRampToValueAtTime(peak1, when + 0.001);
+  g1.gain.exponentialRampToValueAtTime(0.0001, when + 0.04);
+  osc1.connect(g1).connect(metroBus);
+  osc1.start(when); osc1.stop(when + 0.05);
+  const osc2 = ctx.createOscillator();
+  osc2.type = 'sine';
+  osc2.frequency.setValueAtTime(isAccent ? 800 : 600, when);
+  const g2 = ctx.createGain();
+  const peak2 = isAccent ? 0.22 : 0.14;
+  g2.gain.setValueAtTime(0, when);
+  g2.gain.linearRampToValueAtTime(peak2, when + 0.001);
+  g2.gain.exponentialRampToValueAtTime(0.0001, when + 0.025);
+  osc2.connect(g2).connect(metroBus);
+  osc2.start(when); osc2.stop(when + 0.03);
+  const ns = ctx.createBufferSource();
+  ns.buffer = getMetroNoiseBuffer();
+  const bp = ctx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = isAccent ? 2800 : 2200;
+  bp.Q.value = 3.5;
+  const ng = ctx.createGain();
+  ng.gain.value = isAccent ? 0.35 : 0.22;
+  ns.connect(bp).connect(ng).connect(metroBus);
+  ns.start(when); ns.stop(when + 0.015);
+}
+
+/* ============================================================
+   SVG — CON FIX: usa c.tr en lugar de c.trastes
+   ============================================================ */
+function getSvgColors() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if (isDark) {
+    return {
+      nut: '#c8d2db', fret: '#39434c', string: '#56626d',
+      fretnum: '#7e8e9d', open: '#c8d2db', dot: '#c8d2db',
+      dotText: '#1a1f24', barra: '#c8d2db', barraText: '#1a1f24'
+    };
+  }
+  return {
+    nut: '#2c3a45', fret: '#dde4ea', string: '#b6c4d0',
+    fretnum: '#7e8e9d', open: '#2c3a45', dot: '#2c3a45',
+    dotText: '#ffffff', barra: '#2c3a45', barraText: '#ffffff'
+  };
+}
+function generarSVG(c) {
+  if (!c || !c.tr || c.tr.length < 4) return '<svg viewBox="0 0 244 258" class="diagram-svg"></svg>';
+  const col = getSvgColors();
+  const nFrets = 6, x0 = 52, dx = 32, yTop = 36, step = 32;
+  const xC = [0,1,2,3].map(i => x0 + i * dx);
+  const xDer = xC[3], yBot = yTop + nFrets * step, W = xDer + x0;
+  const rDot = 11, rOpen = 7.5, fsDedo = 14, fsBarra = 13, fsTraste = 11;
+  const grosor = [2.3, 1.7, 1.15, 1.6];
+  const yOpen = yTop - 16, H = yBot + 12;
+  let s = `<svg viewBox="0 0 ${W} ${H}" class="diagram-svg" preserveAspectRatio="xMidYMid meet">`;
+  s += `<line x1="${xC[0]}" y1="${yTop}" x2="${xDer}" y2="${yTop}" stroke="${col.nut}" stroke-width="3.40" stroke-linecap="round"/>`;
+  for (let i = 1; i <= nFrets; i++) {
+    const y = yTop + i * step;
+    s += `<line x1="${xC[0]}" y1="${y}" x2="${xDer}" y2="${y}" stroke="${col.fret}" stroke-width="1.20"/>`;
+  }
+  for (let i = 1; i <= nFrets; i++) {
+    const y = yTop + (i - 0.5) * step;
+    s += `<text x="${xC[0]-16}" y="${y}" font-size="${fsTraste}" fill="${col.fretnum}" text-anchor="end" dominant-baseline="central">${i}</text>`;
+  }
+  for (let i = 0; i < 4; i++) {
+    s += `<line x1="${xC[i]}" y1="${yTop}" x2="${xC[i]}" y2="${yBot}" stroke="${col.string}" stroke-width="${grosor[i]}" stroke-linecap="round"/>`;
+  }
+  for (let i = 0; i < 4; i++) {
+    if (c.tr[i] === 0) s += `<circle cx="${xC[i]}" cy="${yOpen}" r="${rOpen}" stroke="${col.open}" stroke-width="1.9" fill="none"/>`;
+  }
+  if (c.barra) {
+    const yB = yTop + c.barra.traste * step - step/2;
+    const idx = c.barra.cuerdas.map(n => 4 - n);
+    const xi = xC[Math.min(...idx)], xf = xC[Math.max(...idx)];
+    const pad = 9, h = 21;
+    s += `<rect x="${xi-pad}" y="${yB-h/2}" width="${xf-xi+2*pad}" height="${h}" rx="${h/2}" ry="${h/2}" fill="${col.barra}"/>`;
+    s += `<text x="${(xi+xf)/2}" y="${yB}" font-size="${fsBarra}" font-weight="700" fill="${col.barraText}" text-anchor="middle" dominant-baseline="central">${c.barra.dedo}</text>`;
+  }
+  for (let i = 0; i < 4; i++) {
+    const t = c.tr[i];
+    const enBarra = c.barra && c.barra.traste === t && c.barra.cuerdas.includes(4 - i);
+    if (t > 0 && !enBarra) {
+      const y = yTop + t * step - step/2;
+      s += `<circle cx="${xC[i]}" cy="${y}" r="${rDot}" fill="${col.dot}"/>`;
+      s += `<text x="${xC[i]}" y="${y}" font-size="${fsDedo}" font-weight="700" fill="${col.dotText}" text-anchor="middle" dominant-baseline="central">${c.d[i]}</text>`;
+    }
+  }
+  s += `</svg>`;
+  return s;
+}
+
+// Renderiza nombre + diagrama
+function renderDiagrama() {
+  if (!acordeActual) {
+    diagramWrap.innerHTML = '';
+    return;
+  }
+  const nombreHTML = `<div class="diagram-nombre"><span class="corto">${acordeActual.c}</span> — ${acordeActual.r} ${acordeActual.t}</div>`;
+  diagramWrap.innerHTML = nombreHTML + generarSVG(acordeActual);
+}
+
+/* ============================================================
+   ESTADO
+   ============================================================ */
+let ejercicioActual = null;
+let acordeActual = null;
+let eventos = [];
+let totalCorcheasCompas = 0;
+let compasesTotal = 4;
+let estado = 'parado';
+let metronomoActivo = false;
+let bucleActivo = false;
+
+let playingGen = 0;
+let schedulerTimer = null;
+let visualRAF = null;
+let nextEventTime = 0;
+let eventCursor = 0;
+let corcheasEnCompas = 0;
+let compasCounter = 0;
+const visualQueue = [];
+let highlightToken = 0;
+
+const LOOKAHEAD = 0.15;
+const TICK_MS = 30;
+const LS_METRO = 'rasgueo-ej.metro.v1';
+const LS_BUCLE = 'rasgueo-ej.bucle.v1';
+
+const selAcorde = document.getElementById('selAcorde');
+const ejList = document.getElementById('ejList');
+const compasesGroup = document.getElementById('compasesGroup');
+const btnPracticar = document.getElementById('btnPracticar');
+const btnBack = document.getElementById('btnBack');
+const btnEscuchar = document.getElementById('btnEscuchar');
+const btnParar = document.getElementById('btnParar');
+const btnEvaluar = document.getElementById('btnEvaluar');
+const btnBucle = document.getElementById('btnBucle');
+const btnMetro = document.getElementById('btnMetro');
+const patternEl = document.getElementById('pattern');
+const practicaTitulo = document.getElementById('practicaTitulo');
+const practicaMeta = document.getElementById('practicaMeta');
+const infoCompas = document.getElementById('infoCompas');
+const infoAcorde = document.getElementById('infoAcorde');
+const infoBpm = document.getElementById('infoBpm');
+const diagramWrap = document.getElementById('diagramWrap');
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const statusPuntaje = document.getElementById('statusPuntaje');
+const sBpm = document.getElementById('sBpm');
+const sVol = document.getElementById('sVol');
+const sBajo = document.getElementById('sBajo');
+const nBpm = document.getElementById('nBpm');
+const nVol = document.getElementById('nVol');
+const nBajo = document.getElementById('nBajo');
+const modalBackdrop = document.getElementById('modalBackdrop');
+const modalTitle = document.getElementById('modalTitle');
+const modalText = document.getElementById('modalText');
+const modalBtn = document.getElementById('modalBtn');
+
+const cellEls = [];
+
+/* ============================================================
+   POBLAR LISTA
+   ============================================================ */
+function poblarEjercicios() {
+  ejList.innerHTML = '';
+  EJERCICIOS.forEach(ej => {
+    const item = document.createElement('div');
+    item.className = 'ej-item';
+    item.dataset.id = ej.id;
+    const previewHTML = ej.celdas.map(c => {
+      if (c === '—' || c === '–' || c === '-') return '<span class="mini-celda mini-dash">—</span>';
+      const cc = normalizarCelda(c);
+      const mDoble = cc.match(/^([↓↑])([rax]?)(>?)([↓↑])([rax]?)(>?)$/);
+      if (mDoble) return `<span class="mini-celda mini-doble"><span>${mDoble[1]}</span><span>${mDoble[4]}</span></span>`;
+      const m = cc.match(/^([↓↑])([rax]?)(>?)$/);
+      if (!m) return '<span class="mini-celda">?</span>';
+      return `<span class="mini-celda">${m[1]}</span>`;
+    }).join('');
+    item.innerHTML = `
+      <div class="num">${ej.id}</div>
+      <div class="info">
+        <div class="nombre">${ej.nombre}</div>
+        <div class="meta">Compás ${ej.compas} · ${ej.bpm} BPM · ${ej.celdas.length} golpes</div>
+        <div class="mini-pattern">${previewHTML}</div>
+      </div>
+      <div class="check pendiente">○</div>
+    `;
+    item.addEventListener('click', () => seleccionarEjercicio(ej.id));
+    ejList.appendChild(item);
+  });
+  if (!ejercicioActual) seleccionarEjercicio(1);
+}
+function seleccionarEjercicio(id) {
+  ejercicioActual = EJERCICIOS.find(e => e.id === id);
+  document.querySelectorAll('.ej-item').forEach(el => {
+    el.classList.toggle('selected', parseInt(el.dataset.id, 10) === id);
+  });
+  sBpm.value = ejercicioActual.bpm;
+  nBpm.value = ejercicioActual.bpm;
+  infoBpm.textContent = ejercicioActual.bpm;
+}
+
+/* ============================================================
+   POBLAR ACORDES
+   ============================================================ */
+function poblarAcordes() {
+  const grupos = {
+    'Mayores': VOICINGS.filter(v => v.t === 'Mayor'),
+    'Séptimas': VOICINGS.filter(v => v.t === 'séptima'),
+    'Menores': VOICINGS.filter(v => v.t === 'menor')
+  };
+  let html = '';
+  for (const [nombre, lista] of Object.entries(grupos)) {
+    html += `<optgroup label="${nombre}">`;
+    lista.forEach(v => {
+      const selected = (v.r === 'Re' && v.t === 'séptima') ? ' selected' : '';
+      html += `<option value="${v.r}|${v.t}"${selected}>${v.c} — ${v.r} ${v.t}</option>`;
+    });
+    html += `</optgroup>`;
+  }
+  selAcorde.innerHTML = html;
+  actualizarAcordeDesdeSelector();
+}
+function actualizarAcordeDesdeSelector() {
+  const val = selAcorde.value;
+  if (!val) return;
+  const [r, t] = val.split('|');
+  acordeActual = VOICINGS.find(v => v.r === r && v.t === t) || null;
+  if (acordeActual) {
+    infoAcorde.textContent = acordeActual.c;
+    renderDiagrama();
+  }
+}
+
+/* ============================================================
+   REPETICIONES
+   ============================================================ */
+compasesGroup.addEventListener('click', (e) => {
+  const btn = e.target.closest('.compas-btn');
+  if (!btn) return;
+  compasesGroup.querySelectorAll('.compas-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  compasesTotal = parseInt(btn.dataset.compases, 10);
+});
+
+/* ============================================================
+   VISTA PRÁCTICA
+   ============================================================ */
+function prepararVistaPractica() {
+  if (!ejercicioActual || !acordeActual) return;
+  eventos = parsearPatron(ejercicioActual.celdas);
+  totalCorcheasCompas = eventos.reduce((s,e) => s + e.corcheas, 0);
+
+  practicaTitulo.textContent = `Ejercicio ${ejercicioActual.id}: ${ejercicioActual.nombre}`;
+  practicaMeta.textContent = `Compás ${ejercicioActual.compas} · ${compasesTotal} repeticiones`;
+
+  renderPatron();
+  renderDiagrama();
+
+  estado = 'parado';
+  actualizarBotones();
+  actualizarStatus('ready', 'Listo');
+  statusPuntaje.textContent = '—';
+  infoCompas.textContent = `0/${compasesTotal}`;
+  infoBpm.textContent = sBpm.value;
+
+  document.body.classList.add('practicando');
+  document.getElementById('viewConfig').classList.remove('active');
+  document.getElementById('viewPractica').classList.add('active');
+}
+function renderPatron() {
+  patternEl.innerHTML = '';
+  cellEls.length = 0;
+  ejercicioActual.celdas.forEach((c) => {
+    const el = document.createElement('div');
+    const esDash = (c === '—' || c === '–' || c === '-');
+    el.className = 'cell ' + (esDash ? 'dash' : '');
+    el.innerHTML = contenidoCelda(c);
+    patternEl.appendChild(el);
+    cellEls.push(el);
+  });
+}
+function contenidoCelda(c) {
+  if (c === '—' || c === '–' || c === '-') return '<span class="flecha">—</span>';
+  const cc = normalizarCelda(c);
+  const mDoble = cc.match(/^([↓↑])([rax]?)(>?)([↓↑])([rax]?)(>?)$/);
+  if (mDoble) {
+    return `<div style="display:flex;width:100%;height:100%;">` +
+      `<div style="flex:1;position:relative;display:flex;align-items:center;justify-content:center;"><span class="flecha">${mDoble[1]}</span><span class="simbolo-arriba">${mDoble[2]||''}${mDoble[3]||''}</span></div>` +
+      `<div style="flex:1;position:relative;display:flex;align-items:center;justify-content:center;"><span class="flecha">${mDoble[4]}</span><span class="simbolo-arriba">${mDoble[5]||''}${mDoble[6]||''}</span></div>` +
+      `</div>`;
+  }
+  const m = cc.match(/^([↓↑])([rax]?)(>?)$/);
+  if (!m) return `<span class="flecha">${c}</span>`;
+  const simbolo = (m[2] || '') + (m[3] || '');
+  const simHTML = simbolo ? `<span class="simbolo-arriba">${simbolo}</span>` : '';
+  return `${simHTML}<span class="flecha">${m[1]}</span>`;
+}
+function volverConfig() {
+  parar();
+  document.body.classList.remove('practicando');
+  document.getElementById('viewPractica').classList.remove('active');
+  document.getElementById('viewConfig').classList.add('active');
+}
+
+/* ============================================================
+   MOTOR
+   ============================================================ */
+function corcheaDuracion() {
+  const bpm = parseInt(sBpm.value, 10);
+  return (60 / bpm) / 2;
+}
+function calcularDivisionBajo() {
+  const partes = ejercicioActual.compas.split('/');
+  const den = parseInt(partes[1], 10);
+  if (den === 4) {
+    return [
+      { corcheaInicio: 0, durCorcheas: 4 },
+      { corcheaInicio: 4, durCorcheas: 2 }
+    ];
+  }
+  if (den === 8) {
+    return [
+      { corcheaInicio: 0, durCorcheas: 3 },
+      { corcheaInicio: 3, durCorcheas: 2 }
+    ];
+  }
+  return [{ corcheaInicio: 0, durCorcheas: totalCorcheasCompas }];
+}
+function calcularUnidadMetro() {
+  const partes = ejercicioActual.compas.split('/');
+  const den = parseInt(partes[1], 10);
+  if (den === 4) return { corcheasPorClick: 2, numClicks: 3 };
+  if (den === 8) return { corcheasPorClick: 1, numClicks: 5 };
+  return { corcheasPorClick: 1, numClicks: totalCorcheasCompas };
+}
+
+function schedulerTick(gen) {
+  if (gen !== playingGen) return;
+  while (nextEventTime < ctx.currentTime + LOOKAHEAD) {
+    if (!eventos.length) return;
+
+    if (compasCounter >= compasesTotal) {
+      if (bucleActivo) {
+        compasCounter = 0;
+        eventCursor = 0;
+        corcheasEnCompas = 0;
+      } else {
+        setTimeout(() => { pararYFinalizar(); }, 0);
+        return;
+      }
+    }
+
+    const ev = eventos[eventCursor];
+    const corcheaDur = corcheaDuracion();
+    const eventDur = ev.corcheas * corcheaDur;
+    const esInicioCompas = (eventCursor === 0);
+
+    if (esInicioCompas) {
+      if (acordeActual) {
+        const division = calcularDivisionBajo();
+        division.forEach(p => {
+          const t = nextEventTime + p.corcheaInicio * corcheaDur;
+          tocarBajo(acordeActual, t, p.durCorcheas * corcheaDur);
+        });
+        visualQueue.push({ time: nextEventTime, tipo: 'inicio-compas' });
+      }
+      if (metronomoActivo) {
+        const um = calcularUnidadMetro();
+        const stepClick = corcheaDur * um.corcheasPorClick;
+        for (let c = 0; c < um.numClicks; c++) {
+          const tClick = nextEventTime + c * stepClick;
+          const acc = (c === 0);
+          scheduleMetro(tClick, acc);
+        }
+      }
+    }
+
+    if (ev.tipo === 'gesto' && acordeActual) {
+      tocarGesto(ev.flecha, acordeActual, nextEventTime, {
+        rasgueo: ev.rasgueo, acento: ev.acento
+      });
+    }
+
+    visualQueue.push({
+      time: nextEventTime, tipo: 'celdas',
+      celdas: ev.celdas, corcheas: ev.corcheas, corcheaDur
+    });
+
+    if (esInicioCompas) corcheasEnCompas = 0;
+    corcheasEnCompas += ev.corcheas;
+    if (corcheasEnCompas >= totalCorcheasCompas - 1e-6) {
+      corcheasEnCompas = 0;
+      compasCounter++;
+    }
+
+    nextEventTime += eventDur;
+    eventCursor = (eventCursor + 1) % eventos.length;
+  }
+  schedulerTimer = setTimeout(() => schedulerTick(gen), TICK_MS);
+}
+
+function visualTick() {
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  while (visualQueue.length && visualQueue[0].time <= now) {
+    const v = visualQueue.shift();
+    if (v.tipo === 'inicio-compas') {
+      infoCompas.textContent = `${Math.min(compasCounter + 1, compasesTotal)}/${compasesTotal}`;
+    } else if (v.tipo === 'celdas') {
+      highlightCells(v.celdas, v.corcheas, v.corcheaDur);
+    }
+  }
+  visualRAF = requestAnimationFrame(visualTick);
+}
+
+function highlightCells(indices, corcheas, corcheaDur) {
+  const myToken = ++highlightToken;
+  const arrowIndices = indices.filter(i => ejercicioActual &&
+    !['—','–','-'].includes(ejercicioActual.celdas[i]));
+  cellEls.forEach(el => el.classList.remove('active'));
+  arrowIndices.forEach(i => cellEls[i]?.classList.add('active'));
+  const totalMs = corcheas * corcheaDur * 1000;
+  setTimeout(() => {
+    if (myToken !== highlightToken) return;
+    arrowIndices.forEach(i => cellEls[i]?.classList.remove('active'));
+  }, totalMs);
+}
+
+function escuchar() {
+  if (estado === 'sonando') return;
+  if (!eventos.length || !acordeActual) return;
+
+  initAudio();
+  actualizarMotor();
+
+  playingGen++;
+  const gen = playingGen;
+  compasCounter = 0;
+  corcheasEnCompas = 0;
+  eventCursor = 0;
+  visualQueue.length = 0;
+  nextEventTime = ctx.currentTime + 0.10;
+  estado = 'sonando';
+
+  actualizarBotones();
+  actualizarStatus('playing', 'Reproduciendo...');
+  statusPuntaje.textContent = '—';
+  infoCompas.textContent = `1/${compasesTotal}`;
+
+  schedulerTick(gen);
+  visualTick();
+}
+function parar() {
+  playingGen++;
+  if (schedulerTimer) { clearTimeout(schedulerTimer); schedulerTimer = null; }
+  if (visualRAF) { cancelAnimationFrame(visualRAF); visualRAF = null; }
+  visualQueue.length = 0;
+  highlightToken++;
+  releaseAll(0.09);
+  cellEls.forEach(el => el.classList.remove('active'));
+  compasCounter = 0;
+  corcheasEnCompas = 0;
+  estado = 'parado';
+  actualizarBotones();
+  actualizarStatus('ready', 'Listo');
+  infoCompas.textContent = `0/${compasesTotal}`;
+}
+function pararYFinalizar() {
+  parar();
+  actualizarStatus('done', 'Ejercicio completado');
+  statusPuntaje.textContent = '— (pendiente)';
+}
+function actualizarBotones() {
+  if (estado === 'sonando') {
+    btnEscuchar.disabled = true;
+    btnParar.disabled = false;
+    btnEvaluar.disabled = true;
+  } else {
+    btnEscuchar.disabled = false;
+    btnParar.disabled = true;
+    btnEvaluar.disabled = true;
+  }
+}
+function actualizarStatus(tipo, texto) {
+  statusDot.className = 'dot ' + tipo;
+  statusText.textContent = texto;
+}
+
+/* ============================================================
+   SLIDERS
+   ============================================================ */
+function actualizarMotor() {
+  volumen = parseInt(sVol.value, 10) / 100;
+  volumenBajo = parseInt(sBajo.value, 10) / 100;
+  if (masterGain) masterGain.gain.value = volumen;
+  if (metroBus) metroBus.gain.value = volumen;
+  if (bajoBus) bajoBus.gain.value = volumenBajo;
+  infoBpm.textContent = sBpm.value;
+}
+function conectarSlider(sl, inp) {
+  sl.addEventListener('input', () => { inp.value = sl.value; actualizarMotor(); });
+  inp.addEventListener('focus', () => setTimeout(() => inp.select(), 0));
+  inp.addEventListener('blur', () => {
+    let v = parseFloat(inp.value);
+    if (isNaN(v)) v = parseInt(sl.value, 10);
+    v = Math.max(parseFloat(sl.min), Math.min(parseFloat(sl.max), v));
+    sl.value = v; inp.value = v;
+    actualizarMotor();
+  });
+  inp.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
+  });
+}
+conectarSlider(sBpm, nBpm);
+conectarSlider(sVol, nVol);
+conectarSlider(sBajo, nBajo);
+
+/* ============================================================
+   TEMA
+   ============================================================ */
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('btnTheme').textContent = t === 'dark' ? '☀️' : '🌙';
+  try { localStorage.setItem('rasgueoEjTema', t); } catch(e){}
+  if (acordeActual) renderDiagrama();
+}
+document.getElementById('btnTheme').addEventListener('click', () => {
+  const cur = document.documentElement.getAttribute('data-theme');
+  applyTheme(cur === 'dark' ? 'light' : 'dark');
+});
+(() => {
+  let t = 'light';
+  try {
+    t = localStorage.getItem('rasgueoEjTema')
+      || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  } catch(e){}
+  applyTheme(t);
+})();
+
+/* ============================================================
+   METRÓNOMO
+   ============================================================ */
+try { metronomoActivo = localStorage.getItem(LS_METRO) === '1'; } catch (e) {}
+function renderMetroButton() {
+  btnMetro.classList.toggle('active', metronomoActivo);
+  btnMetro.textContent = (metronomoActivo ? '🔔' : '🔕') + ' Metrónomo';
+}
+btnMetro.addEventListener('click', () => {
+  metronomoActivo = !metronomoActivo;
+  try { localStorage.setItem(LS_METRO, metronomoActivo ? '1' : '0'); } catch (e) {}
+  renderMetroButton();
+});
+
+/* ============================================================
+   BUCLE
+   ============================================================ */
+try { bucleActivo = localStorage.getItem(LS_BUCLE) === '1'; } catch (e) {}
+function renderBucleButton() {
+  btnBucle.classList.toggle('active', bucleActivo);
+  btnBucle.textContent = '🔁 Bucle';
+}
+btnBucle.addEventListener('click', () => {
+  bucleActivo = !bucleActivo;
+  try { localStorage.setItem(LS_BUCLE, bucleActivo ? '1' : '0'); } catch (e) {}
+  renderBucleButton();
+});
+
+/* ============================================================
+   EVENTOS
+   ============================================================ */
+btnPracticar.addEventListener('click', prepararVistaPractica);
+btnBack.addEventListener('click', volverConfig);
+btnEscuchar.addEventListener('click', escuchar);
+btnParar.addEventListener('click', parar);
+btnEvaluar.addEventListener('click', () => {
+  modalTitle.textContent = 'Modo Evaluar';
+  modalText.textContent = 'Esta función estará disponible en la próxima actualización. Por ahora puedes practicar escuchando el patrón de referencia y siguiendo el metrónomo.';
+  modalBackdrop.classList.add('open');
+});
+modalBtn.addEventListener('click', () => modalBackdrop.classList.remove('open'));
+modalBackdrop.addEventListener('click', (e) => {
+  if (e.target === modalBackdrop) modalBackdrop.classList.remove('open');
+});
+selAcorde.addEventListener('change', actualizarAcordeDesdeSelector);
+
+document.addEventListener('keydown', (e) => {
+  if (e.repeat) return;
+  const enInput = e.target.tagName === 'INPUT' && e.target.type !== 'range';
+  if (enInput) return;
+  const enPractica = document.getElementById('viewPractica').classList.contains('active');
+  if (!enPractica) return;
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (estado === 'sonando') parar(); else escuchar();
+  }
+  if (e.key === 'Escape') { e.preventDefault(); parar(); }
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+poblarEjercicios();
+poblarAcordes();
+actualizarMotor();
+renderMetroButton();
+renderBucleButton();
+actualizarBotones();
+</script>
+</body>
+</html>
