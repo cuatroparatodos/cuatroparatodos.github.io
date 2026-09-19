@@ -1,0 +1,1774 @@
+apps/diccionario/index.html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Diccionario de acordes y progresiones</title>
+    <style>
+        :root {
+            --bg: #eaeef2; --surface: #ffffff; --surface-2: #f4f7fa;
+            --ink: #2c3a45; --ink-soft: #5a6b7a; --ink-muted: #7e8e9d;
+            --line: #c5d0da; --line-soft: #dde4ea;
+            --accent: #5a7a94; --accent-hover: #46637a; --accent-soft: #dde6ee;
+            --warn: #c98a3c; --warn-soft: #fdf3e3;
+            --radius: 10px; --radius-lg: 14px;
+            --shadow-sm: 0 1px 2px rgba(44, 58, 69, 0.06);
+            --shadow: 0 2px 8px rgba(44, 58, 69, 0.06);
+            --shadow-md: 0 6px 20px rgba(44, 58, 69, 0.10);
+            --dg-nut: #2c3a45; --dg-fret: #dde4ea; --dg-string: #b6c4d0;
+            --dg-fretnum: #7e8e9d; --dg-open: #2c3a45; --dg-dot: #2c3a45;
+            --dg-dot-text: #ffffff; --dg-barra: #2c3a45; --dg-sep: #c5d0da;
+            --dg-deg: #7e8e9d; --dg-note: #2c3a45;
+        }
+        :root[data-theme="dark"] {
+            --bg: #14181c; --surface: #1e242a; --surface-2: #262e36;
+            --ink: #e4eaef; --ink-soft: #a8b4c0; --ink-muted: #75828f;
+            --line: #39434c; --line-soft: #2a333b;
+            --accent: #8fb0cd; --accent-hover: #a9c4dc; --accent-soft: #2b3a47;
+            --warn: #e0b071; --warn-soft: #3a3024;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.35);
+            --shadow: 0 2px 8px rgba(0,0,0,0.35);
+            --shadow-md: 0 6px 20px rgba(0,0,0,0.5);
+            --dg-nut: #c8d2db; --dg-fret: #39434c; --dg-string: #56626d;
+            --dg-fretnum: #7e8e9d; --dg-open: #c8d2db; --dg-dot: #c8d2db;
+            --dg-dot-text: #1a1f24; --dg-barra: #c8d2db; --dg-sep: #39434c;
+            --dg-deg: #7e8e9d; --dg-note: #e4eaef;
+        }
+        * { box-sizing: border-box; }
+        html { font-size: 16px; }
+        body {
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+            padding: 40px 32px 60px; background: var(--bg); color: var(--ink);
+            font-size: 1rem; line-height: 1.5; margin: 0;
+            -webkit-font-smoothing: antialiased;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .theme-toggle {
+            position: fixed; top: 16px; right: 16px; width: 42px; height: 42px;
+            border-radius: 50%; background: var(--surface); border: 1px solid var(--line);
+            cursor: pointer; font-size: 1.1rem; display: flex; align-items: center;
+            justify-content: center; z-index: 100; box-shadow: var(--shadow);
+            transition: transform 0.15s, background 0.15s, border-color 0.15s;
+            padding: 0; color: var(--ink);
+        }
+        .theme-toggle:hover { transform: scale(1.08); border-color: var(--accent); }
+        body.fs-open .theme-toggle { display: none; }
+        .view { animation: fadeInView 0.28s ease; }
+        .view.view-hidden { display: none; }
+        @keyframes fadeInView { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+        header.home-header {
+            text-align: center; margin-bottom: 40px; padding-bottom: 32px;
+            border-bottom: 1px solid var(--line);
+        }
+        h1 {
+            font-family: Georgia, "Iowan Old Style", "Times New Roman", serif;
+            font-size: clamp(2rem, 3.6vw, 2.8rem); margin: 0 0 6px 0;
+            line-height: 1.15; font-weight: 600; color: var(--ink);
+            letter-spacing: -0.01em;
+        }
+        .subtitulo-1 {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: clamp(1.15rem, 2vw, 1.55rem); margin: 0;
+            line-height: 1.3; font-weight: 400; color: var(--ink-soft);
+            letter-spacing: 0.02em;
+        }
+        .subtitulo-2 {
+            font-family: Georgia, "Iowan Old Style", "Times New Roman", serif;
+            font-size: clamp(2rem, 3.6vw, 2.8rem); margin: 4px 0 0 0;
+            line-height: 1.15; font-weight: 300; font-style: italic;
+            color: var(--ink-soft); letter-spacing: -0.01em;
+        }
+        .home-menu {
+            max-width: 640px; margin: 0 auto;
+            display: flex; flex-direction: column; gap: 14px;
+        }
+        .home-menu .custom-select-wrapper {
+            position: relative; user-select: none; width: 100%;
+        }
+        .home-leyenda { max-width: 720px; margin: 30px auto 0; text-align: center; }
+        .leyenda {
+            display: inline-block; padding: 12px 18px; font-size: 1.15rem;
+            color: var(--ink-soft); line-height: 1.8; letter-spacing: 0.01em;
+            text-align: center;
+        }
+        .leyenda b { color: var(--ink); font-weight: 600; }
+        .leyenda-linea { display: block; }
+        .leyenda-linea + .leyenda-linea { margin-top: 4px; }
+        .num-dedo {
+            font-weight: 700; color: var(--ink); font-size: 1.15em;
+            display: inline-block; min-width: 0.9em;
+        }
+        .home-action-bar {
+            max-width: 640px; margin: 30px auto 0;
+            display: flex; flex-direction: column; align-items: center; gap: 12px;
+        }
+        .hint-falta {
+            display: none; align-items: center; gap: 8px;
+            background: var(--warn-soft); color: var(--warn);
+            border: 1px solid var(--warn); border-radius: var(--radius);
+            padding: 10px 16px; font-size: 1rem; font-weight: 600;
+            text-align: center; max-width: 100%;
+        }
+        .hint-falta.visible { display: inline-flex; }
+        .hint-falta .icono { font-size: 1.2em; }
+        .hint-falta b { color: var(--warn); font-weight: 700; }
+        .btn-ver-acordes {
+            background: var(--accent); color: #ffffff;
+            border: 1px solid var(--accent); padding: 14px 40px;
+            cursor: pointer; font-family: inherit; font-size: 1.15rem;
+            font-weight: 700; letter-spacing: 0.02em;
+            border-radius: var(--radius); box-shadow: var(--shadow-md);
+            transition: background 0.15s, border-color 0.15s, transform 0.1s, opacity 0.15s;
+            min-width: 260px;
+        }
+        .btn-ver-acordes:hover:not(.disabled) {
+            background: var(--accent-hover); border-color: var(--accent-hover);
+        }
+        .btn-ver-acordes:active:not(.disabled) { transform: translateY(1px); }
+        .btn-ver-acordes.disabled {
+            opacity: 0.45; cursor: not-allowed; filter: saturate(0.5);
+        }
+        :root[data-theme="dark"] .btn-ver-acordes { color: #14181c; }
+        .btn-reset {
+            background: transparent; color: var(--ink-soft);
+            border: 1px solid var(--line); padding: 9px 18px;
+            cursor: pointer; font-family: inherit; font-size: 0.92rem;
+            font-weight: 500; white-space: nowrap;
+            border-radius: var(--radius);
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            letter-spacing: 0.01em; margin-top: 4px;
+        }
+        .btn-reset:hover { color: var(--accent); border-color: var(--accent); }
+        .custom-select, .custom-options { font-family: inherit; }
+        .custom-select {
+            position: relative; display: block; background: var(--surface);
+            border: 1px solid var(--line); border-radius: var(--radius);
+            padding: 11px 34px 11px 16px; font-size: 1.15rem;
+            line-height: 1.5; cursor: pointer; min-width: 0; width: 100%;
+            color: var(--ink-soft);
+            transition: border-color 0.15s, box-shadow 0.15s, color 0.15s, background 0.2s;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            box-shadow: var(--shadow-sm);
+        }
+        .custom-select:hover { border-color: var(--accent); }
+        .custom-select::after {
+            content: ""; position: absolute; right: 16px; top: 50%;
+            width: 6px; height: 6px;
+            border-right: 1.5px solid var(--ink-muted);
+            border-bottom: 1.5px solid var(--ink-muted);
+            transform: translateY(-70%) rotate(45deg);
+            pointer-events: none; transition: transform 0.15s;
+        }
+        .custom-select.selected { font-weight: 600; color: var(--ink); }
+        .custom-select.requerido-falta {
+            border-color: var(--warn); box-shadow: 0 0 0 3px var(--warn-soft);
+        }
+        .custom-options {
+            position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+            background: var(--surface); border: 1px solid var(--line);
+            border-radius: var(--radius); box-shadow: var(--shadow-md);
+            display: none; z-index: 99; max-height: 320px; overflow-y: auto;
+            padding: 4px; font-size: 1rem;
+        }
+        .custom-options.open { display: block; }
+        .custom-option {
+            padding: 9px 14px; cursor: pointer; border-radius: 6px;
+            color: var(--ink-soft); transition: background 0.1s, color 0.1s;
+        }
+        .custom-option:hover {
+            background: var(--accent-soft); color: var(--accent-hover);
+        }
+        .prog-bold { font-weight: 600; color: var(--ink); }
+        .prog-light { font-weight: 400; color: var(--ink-soft); }
+        .todos-opcion {
+            font-weight: 600; color: var(--accent);
+            border-bottom: 1px solid var(--line-soft);
+            border-radius: 6px 6px 0 0; margin-bottom: 4px;
+        }
+        .todos-opcion:hover { background: var(--accent); color: #ffffff; }
+        :root[data-theme="dark"] .todos-opcion:hover { color: #14181c; }
+        .dim-o {
+            font-size: 0.7em; vertical-align: super;
+            text-decoration: underline; text-underline-offset: 1px;
+        }
+        .results-topbar {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 16px;
+            max-width: 1200px; margin: 0 auto 8px; padding: 14px 20px;
+            background: var(--surface); border: 1px solid var(--line);
+            border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+        }
+        .btn-volver {
+            background: transparent; color: var(--accent);
+            border: 1px solid var(--accent); padding: 8px 16px;
+            font-family: inherit; font-size: 0.92rem; font-weight: 600;
+            border-radius: var(--radius); cursor: pointer;
+            transition: background 0.15s, color 0.15s; white-space: nowrap;
+        }
+        .btn-volver:hover { background: var(--accent); color: #ffffff; }
+        :root[data-theme="dark"] .btn-volver:hover { color: #14181c; }
+        .results-summary {
+            font-size: 0.95rem; color: var(--ink-soft); flex: 1;
+            min-width: 0; white-space: nowrap; overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .results-summary b { color: var(--ink); font-weight: 600; }
+        .results-summary .sep { color: var(--ink-muted); padding: 0 6px; }
+        .grid { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 26px; }
+        .grid-auto { justify-content: center; align-items: stretch; }
+        .grid-auto > .card { flex: 1 1 260px; max-width: 320px; }
+        .grid-auto > .prog-card { flex: 0 0 100%; max-width: 100%; }
+        .grid-3col { display: grid; grid-template-columns: repeat(3, 1fr); }
+        .card {
+            background: var(--surface); padding: 22px 18px 18px;
+            border-radius: var(--radius-lg); text-align: center;
+            box-shadow: var(--shadow-sm); border: 1px solid var(--line);
+            cursor: pointer;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.2s;
+            display: flex; flex-direction: column; justify-content: flex-start;
+        }
+        .card:hover {
+            transform: translateY(-3px); box-shadow: var(--shadow-md);
+            border-color: var(--accent);
+        }
+        .card:active { transform: translateY(-1px); }
+        .card-header {
+            min-height: 68px; display: flex; flex-direction: column;
+            justify-content: flex-start; align-items: center; margin-bottom: 12px;
+        }
+        .card-header .grado {
+            font-size: 0.75rem; color: var(--accent);
+            font-weight: 700; letter-spacing: 0.06em; margin-bottom: 6px;
+        }
+        .card-header .no-aplica {
+            font-size: 0.85rem; color: var(--ink-soft);
+            font-style: italic; margin-top: 4px;
+        }
+        .card h3 {
+            font-size: 0.9rem; margin: 0 0 4px 0; color: var(--ink-soft);
+            line-height: 1.2; font-weight: 500; order: 2;
+        }
+        .card p {
+            font-size: 1.7rem; margin: 0; color: var(--ink);
+            font-style: normal; line-height: 1.1; font-weight: 700;
+            letter-spacing: -0.01em; order: 1;
+        }
+        .card.diminished-card p { font-size: 1.45rem; }
+        .card.diminished-card h3 { font-size: 0.82rem; }
+        .card-header { order: 0; }
+        .card svg { order: 3; margin-top: 10px; }
+        .diagram-svg {
+            width: 100%; max-width: 195px; height: auto;
+            margin: 0 auto; display: block; pointer-events: none;
+        }
+        .diagram-svg-small {
+            width: 100%; max-width: 120px; height: auto;
+            margin: 0 auto; display: block; pointer-events: none;
+        }
+        .dg-nut { stroke: var(--dg-nut); }
+        .dg-fret { stroke: var(--dg-fret); }
+        .dg-string { stroke: var(--dg-string); }
+        .dg-fretnum { fill: var(--dg-fretnum); }
+        .dg-open { stroke: var(--dg-open); fill: none; }
+        .dg-dot { fill: var(--dg-dot); }
+        .dg-dot-txt { fill: var(--dg-dot-text); }
+        .dg-barra { fill: var(--dg-barra); }
+        .dg-barra-txt { fill: var(--dg-dot-text); }
+        .dg-sep { stroke: var(--dg-sep); }
+        .dg-deg { fill: var(--dg-deg); }
+        .dg-deg-root { fill: var(--accent); }
+        .dg-note { fill: var(--dg-note); }
+        .dg-note-root { fill: var(--accent); }
+        .pair-horizontal {
+            display: flex; flex-direction: row; justify-content: space-around;
+            align-items: stretch; gap: 12px; width: 100%;
+        }
+        .pair-col {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: flex-start;
+            min-width: 0; gap: 2px;
+        }
+        .pair-col .grado {
+            font-size: 0.75rem; color: var(--accent);
+            font-weight: 700; letter-spacing: 0.06em; margin-bottom: 4px;
+        }
+        .pair-col .no-aplica-text {
+            font-size: 0.85rem; color: var(--ink-soft);
+            font-style: italic; display: flex; align-items: center;
+            justify-content: center; height: 100%; min-height: 120px;
+            text-align: center;
+        }
+        .pair-col h3 {
+            font-size: 0.9rem; margin: 0 0 4px 0;
+            color: var(--ink-soft); line-height: 1.2; font-weight: 500;
+        }
+        .pair-col p {
+            font-size: 1.5rem; margin: 0; color: var(--ink);
+            font-style: normal; line-height: 1.1; font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+        .pair-divider {
+            display: flex; align-items: center; font-size: 1.2rem;
+            color: var(--ink-muted); padding: 0 4px;
+        }
+        .aviso-rojo {
+            flex-basis: 100%; text-align: center; color: var(--accent);
+            font-style: italic; padding: 40px 0; font-size: 1.05rem;
+        }
+        .prog-card { display: flex; flex-direction: column; align-items: center; padding: 32px 24px; }
+        .prog-card-row {
+            display: flex; flex-wrap: wrap; gap: 26px 28px;
+            justify-content: center; align-items: flex-start; width: 100%;
+        }
+        .prog-card-item {
+            display: flex; flex-direction: column; align-items: center; min-width: 0;
+        }
+        .prog-card-item .grado {
+            font-size: 0.75rem; color: var(--accent);
+            font-weight: 700; letter-spacing: 0.06em; margin-bottom: 6px;
+        }
+        .prog-card-item h3 {
+            font-size: 0.88rem; margin: 0 0 4px 0;
+            color: var(--ink-soft); line-height: 1.2; font-weight: 500; order: 2;
+        }
+        .prog-card-item p {
+            font-size: 1.4rem; margin: 0; color: var(--ink);
+            font-style: normal; line-height: 1.1; font-weight: 700;
+            order: 1; letter-spacing: -0.01em;
+        }
+        .prog-card-item svg { order: 3; margin-top: 8px; }
+        .fullscreen-overlay {
+            position: fixed; inset: 0; background: var(--bg);
+            z-index: 1000; display: none; flex-direction: column;
+            padding: 16px 28px 20px; transition: background-color 0.2s;
+        }
+        .fullscreen-overlay.open { display: flex; }
+        .fs-topbar {
+            display: flex; flex-wrap: wrap; justify-content: space-between;
+            align-items: center; gap: 20px; padding-bottom: 12px;
+            border-bottom: 1px solid var(--line-soft); flex-shrink: 0;
+        }
+        .fs-left { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; }
+        .fs-left label {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 0.9rem; color: var(--ink-soft);
+        }
+        .fs-left input[type="range"] { width: 130px; accent-color: var(--accent); }
+        .slider-hint { font-size: 0.75rem; color: var(--ink-muted); }
+        .fs-left button, .fs-right button {
+            padding: 9px 18px; font-family: inherit; font-size: 0.92rem;
+            border-radius: var(--radius); cursor: pointer;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+        .btn-tocar {
+            background: var(--accent); color: #ffffff;
+            border: 1px solid var(--accent); font-weight: 600; min-width: 118px;
+        }
+        .btn-tocar:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+        .btn-tocar.playing { background: #b85450; border-color: #b85450; }
+        .btn-tocar.playing:hover { background: #9e3f3b; border-color: #9e3f3b; }
+        :root[data-theme="dark"] .btn-tocar { color: #14181c; }
+        .btn-bucle {
+            background: transparent; color: var(--ink-soft);
+            border: 1px solid var(--line); font-weight: 600; min-width: 108px;
+        }
+        .btn-bucle:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-bucle.active {
+            background: var(--accent); color: #ffffff; border-color: var(--accent);
+        }
+        .btn-bucle.active:hover {
+            background: var(--accent-hover); border-color: var(--accent-hover);
+            color: #ffffff;
+        }
+        :root[data-theme="dark"] .btn-bucle.active { color: #14181c; }
+        .btn-regresar {
+            background: transparent; color: var(--ink-soft);
+            border: 1px solid var(--line);
+        }
+        .btn-regresar:hover { border-color: var(--accent); color: var(--accent); }
+        .fs-content {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            overflow: hidden; padding: 14px 0 8px; min-height: 0;
+        }
+        .fs-content h2 {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: clamp(1.3rem, 2vw, 1.7rem); margin: 0 0 2px 0;
+            color: var(--ink); font-weight: 600; text-align: center;
+            letter-spacing: -0.01em; line-height: 1.15; flex-shrink: 0;
+        }
+        .fs-content p {
+            font-size: clamp(2rem, 3.2vw, 2.8rem); color: var(--accent);
+            font-style: normal; font-weight: 700; margin: 0 0 4px 0;
+            line-height: 1; letter-spacing: -0.02em; flex-shrink: 0;
+        }
+        .fs-chord-subtitle {
+            font-size: clamp(0.88rem, 1.1vw, 1rem); font-weight: 500;
+            color: var(--ink-soft); margin: 0 0 8px 0;
+            font-family: inherit; line-height: 1.2;
+            text-align: center; flex-shrink: 0;
+        }
+        .fs-svg-wrap {
+            flex: 1; min-height: 0; display: flex;
+            align-items: center; justify-content: center;
+            width: 100%; padding: 4px 0;
+        }
+        .fs-svg-wrap svg.diagram-svg,
+        .fs-svg-wrap svg.diagram-svg-fs {
+            height: 100%; width: auto; max-width: 100%;
+            max-height: 100%; display: block;
+        }
+        .fs-content.fs-mode-single .fs-svg-wrap { flex: 1 1 auto; min-height: 0; width: 100%; }
+        .fs-pair {
+            display: flex; gap: 30px; align-items: stretch;
+            justify-content: center; flex-wrap: nowrap;
+            width: 100%; height: 100%; min-height: 0;
+        }
+        .fs-pair-item {
+            display: flex; flex-direction: column; align-items: center;
+            flex: 1 1 0; min-width: 0; min-height: 0; height: 100%;
+        }
+        .fs-pair-item h2 { font-size: clamp(1.1rem, 1.6vw, 1.5rem); margin: 0 0 2px 0; }
+        .fs-pair-item p { font-size: clamp(1.5rem, 2.2vw, 2rem); margin: 0 0 2px 0; }
+        .fs-pair-item .fs-chord-subtitle { margin: 0 0 8px 0; font-size: clamp(0.82rem, 1vw, 0.95rem); }
+        .fs-pair-item .fs-svg-wrap { flex: 1; min-height: 0; width: 100%; padding: 0; }
+        .fs-arrow {
+            font-size: 2rem; color: var(--ink-muted);
+            font-weight: 300; flex: 0 0 auto;
+            display: flex; align-items: center;
+        }
+        .fs-prog-row {
+            display: flex; flex-wrap: nowrap; gap: 18px;
+            justify-content: center; align-items: stretch;
+            width: 100%; height: 100%; min-height: 0;
+        }
+        .fs-prog-stack {
+            display: flex; flex-direction: column; gap: 14px;
+            width: 100%; height: 100%; min-height: 0;
+        }
+        .fs-prog-stack .fs-prog-row { flex: 1 1 0; min-height: 0; }
+        .fs-prog-item {
+            display: flex; flex-direction: column; align-items: center;
+            flex: 1 1 0; min-width: 0; min-height: 0; height: 100%;
+        }
+        .fs-prog-item .grado {
+            font-size: 0.85rem; color: var(--accent);
+            font-weight: 700; letter-spacing: 0.06em;
+            margin-bottom: 1px; flex-shrink: 0;
+        }
+        .fs-prog-item p {
+            font-size: clamp(1.1rem, 1.6vw, 1.5rem); margin: 0 0 2px 0;
+            color: var(--ink); font-style: normal; font-weight: 700;
+            line-height: 1; letter-spacing: -0.01em; flex-shrink: 0;
+        }
+        .fs-prog-item .fs-chord-subtitle { display: none; }
+        .fs-prog-item .fs-svg-wrap { flex: 1; min-height: 0; width: 100%; padding: 0; }
+
+        @media (max-width: 900px) {
+            body { padding: 24px 16px 40px; }
+            .theme-toggle { top: 12px; right: 12px; }
+            .grid-auto > .card { flex: 1 1 200px; max-width: 260px; }
+            .grid-3col { grid-template-columns: 1fr; }
+            .fs-topbar { flex-direction: column; align-items: stretch; }
+            .fs-left { justify-content: space-between; }
+            .fs-pair { gap: 16px; }
+            .fs-prog-stack { gap: 10px; }
+            .fs-prog-row { gap: 12px; }
+            .leyenda { font-size: 1rem; }
+        }
+    </style>
+    <script>
+        (function() {
+            try {
+                var saved = localStorage.getItem('cuatro-theme');
+                if (saved === 'dark' || saved === 'light') document.documentElement.dataset.theme = saved;
+                else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+                    document.documentElement.dataset.theme = 'dark';
+            } catch (e) {}
+        })();
+    </script>
+</head>
+<body>
+    <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar tema">🌙</button>
+
+    <div id="homeView" class="view">
+        <header class="home-header">
+            <h1>Diccionario de acordes y progresiones</h1>
+            <div class="subtitulo-1">Cuatro venezolano</div>
+            <div class="subtitulo-2">Ángel Martínez</div>
+        </header>
+
+        <div class="home-menu">
+            <div class="custom-select-wrapper" id="afinacionWrapper">
+                <div class="custom-select" id="afinacionTrigger">Afinación</div>
+                <div class="custom-options" id="afinacionOptions"></div>
+                <input type="hidden" id="afinacionSelect" value="reentrante">
+            </div>
+            <div class="custom-select-wrapper" id="raizWrapper">
+                <div class="custom-select" id="raizTrigger">Nota</div>
+                <div class="custom-options" id="raizOptions"></div>
+                <input type="hidden" id="raizSelect" value="todos">
+            </div>
+            <div class="custom-select-wrapper" id="tipoWrapper">
+                <div class="custom-select" id="tipoTrigger">Tipo de acorde</div>
+                <div class="custom-options" id="tipoOptions"></div>
+                <input type="hidden" id="tipoSelect" value="todos">
+            </div>
+            <div class="custom-select-wrapper" id="acordesTonalidadWrapper">
+                <div class="custom-select" id="acordesTonalidadTrigger">Acordes por tonalidad</div>
+                <div class="custom-options" id="acordesTonalidadOptions"></div>
+                <input type="hidden" id="acordesTonalidadSelect" value="todos">
+            </div>
+            <div class="custom-select-wrapper" id="acordesDomSecWrapper">
+                <div class="custom-select" id="acordesDomSecTrigger">Acordes con dominantes secundarias</div>
+                <div class="custom-options" id="acordesDomSecOptions"></div>
+                <input type="hidden" id="acordesDomSecSelect" value="todos">
+            </div>
+            <div class="custom-select-wrapper" id="progMayorWrapper">
+                <div class="custom-select" id="progMayorTrigger">Progresiones mayores</div>
+                <div class="custom-options" id="progMayorOptions"></div>
+                <input type="hidden" id="progMayorSelect" value="todos">
+            </div>
+            <div class="custom-select-wrapper" id="progMenorWrapper">
+                <div class="custom-select" id="progMenorTrigger">Progresiones menores</div>
+                <div class="custom-options" id="progMenorOptions"></div>
+                <input type="hidden" id="progMenorSelect" value="todos">
+            </div>
+            <div class="custom-select-wrapper" id="progOtrasWrapper">
+                <div class="custom-select" id="progOtrasTrigger">Otras progresiones</div>
+                <div class="custom-options" id="progOtrasOptions"></div>
+                <input type="hidden" id="progOtrasSelect" value="todos">
+            </div>
+        </div>
+
+        <div class="home-action-bar">
+            <div class="hint-falta" id="hintFalta">
+                <span class="icono">⚠</span>
+                <span id="hintFaltaTexto">Falta seleccionar: <b>Nota</b></span>
+            </div>
+            <button class="btn-ver-acordes" id="btnVerAcordes" onclick="verAcordes()">Todos los acordes →</button>
+            <button class="btn-reset" onclick="resetAllFilters()">⟲ Restablecer filtros</button>
+        </div>
+
+        <div class="home-leyenda">
+            <div class="leyenda">
+                <div class="leyenda-linea">
+                    <b>Dedos:</b> ⚫ <span class="num-dedo">1</span> = índice · <span class="num-dedo">2</span> = central · <span class="num-dedo">3</span> = anular · <span class="num-dedo">4</span> = meñique · <span class="num-dedo">5</span> = pulgar &nbsp;·&nbsp; <b>Cejilla:</b> ▬
+                </div>
+                <div class="leyenda-linea">
+                    <b>Atajos:</b> Espacio = Tocar/Parar - Esc = Regresa - L = Bucle
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="resultsView" class="view view-hidden">
+        <div class="results-topbar">
+            <button class="btn-volver" onclick="showHome()">← Cambiar filtros</button>
+            <div class="results-summary" id="resultsSummary"></div>
+        </div>
+        <div id="container" class="grid grid-auto"></div>
+    </div>
+
+    <div id="fullscreenOverlay" class="fullscreen-overlay">
+        <div class="fs-topbar">
+            <div class="fs-left">
+                <label>🔊 Volumen: <input type="range" id="volumenControlFS" min="0" max="100" value="80"></label>
+                <label>⚡ Velocidad:
+                    <span class="slider-hint">250</span>
+                    <input type="range" id="velocidadControlFS" min="0" max="100" value="58">
+                    <span class="slider-hint">Unísono</span>
+                </label>
+                <button class="btn-tocar" id="btnTocarFS" onclick="toggleTocarFullscreen()">▶ Tocar</button>
+                <button class="btn-bucle" id="btnBucleFS" onclick="toggleBucle()" title="Bucle">🔁 Bucle</button>
+            </div>
+            <div class="fs-right">
+                <button class="btn-regresar" onclick="cerrarFullscreen()">⟵ Regresar</button>
+            </div>
+        </div>
+        <div id="fullscreenContent" class="fs-content fs-mode-single"></div>
+    </div>
+
+    <div id="chord-data-matrix" style="display:none;">
+        <div data-raiz="Do" data-tipo="Mayor" data-cifrado="C" data-trastes="[3, 2, 1, 1]" data-dedos="[3, 2, 1, 1]" data-barra='{"cuerdas": [1, 2], "traste": 1, "dedo": 1}'></div>
+        <div data-raiz="Do" data-tipo="séptima" data-cifrado="C7" data-trastes="[1, 2, 1, 1]" data-dedos="[1, 2, 1, 1]" data-barra='{"cuerdas": [1, 2, 3, 4], "traste": 1, "dedo": 1}'></div>
+        <div data-raiz="Do" data-tipo="menor" data-cifrado="Cm" data-trastes="[3, 1, 1, 1]" data-dedos="[3, 1, 1, 1]" data-barra='{"cuerdas": [1, 2, 3, 4], "traste": 1, "dedo": 1}'></div>
+        <div data-raiz="Do" data-tipo="aumentado" data-cifrado="Caug" data-trastes="[3, 2, 2, 1]" data-dedos="[4, 2, 3, 1]"></div>
+        <div data-raiz="Do" data-tipo="semidisminuido" data-cifrado="Cø" data-trastes="[1, 1, 0, 1]" data-dedos="[1, 2, 0, 3]"></div>
+        <div data-raiz="Do" data-tipo="disminuido séptima" data-cifrado="Co7" data-trastes="[0, 1, 0, 1]" data-dedos="[0, 1, 0, 2]"></div>
+        <div data-raiz="Do" data-tipo="séptima con cuarta suspendida" data-cifrado="C7sus4" data-trastes="[1, 3, 1, 1]" data-dedos="[1, 3, 1, 1]" data-barra='{"cuerdas": [1, 2, 3, 4], "traste": 1, "dedo": 1}'></div>
+        <div data-raiz="Do" data-tipo="séptima con novena menor" data-cifrado="C7b9" data-trastes="[1, 2, 1, 2]" data-dedos="[1, 3, 2, 4]"></div>
+        <div data-raiz="Do" data-tipo="séptima con novena mayor" data-cifrado="C7(9)" data-trastes="[1, 2, 1, 3]" data-dedos="[1, 3, 2, 4]" data-barra='{"cuerdas": [1, 2, 3, 4], "traste": 1, "dedo": 1}'></div>
+
+        <div data-raiz="Do#/Reb" data-tipo="Mayor" data-cifrado="C#/Db" data-trastes="[4, 3, 2, 2]" data-dedos="[3, 2, 1, 1]" data-barra='{"cuerdas": [1, 2], "traste": 2, "dedo": 1}'></div>
+        <div data-raiz="Do#/Reb" data-tipo="séptima" data-cifrado="C#7/Db7" data-trastes="[2, 3, 2, 2]" data-dedos="[1, 2, 1, 1]" data-barra='{"cuerdas": [1, 2, 3, 4], "traste": 2, "dedo": 1}'></div>
+        <div data-raiz="Do#/Reb" data-tipo="menor" data-cifrado="C#m/Dbm" data-trastes="[4, 2, 2, 2]" data-dedos="[3, 1, 1, 1]" data-barra='{"cuerdas": [1, 2, 3, 4], "traste": 2, "dedo": 1}'></div>
+        <div data-raiz="Do#/Reb" data-tipo="aumentado" data-cifrado="C#aug/Dbaug" data-trastes="[4, 3, 3, 2]" data-dedos="[4, 2, 3, 1]"></div>
+        <div data-raiz="Do#/Reb" data-tipo="semidisminuido" data-cifrado="C#ø/Dbø" data-trastes="[2, 2, 1, 2]" data-dedos="[3, 2, 1, 4]"></div>
+        <div data-raiz="Do#/Reb" data-tipo="disminuido séptima" data-cifrado="C#o7/Dbo7" data-trastes="[1, 2, 1, 2]" data-dedos="[1, 3, 2, 4]"></div>
+        <div data-raiz="Do#/Reb" data-tipo="séptima con cuarta suspendida" data-cifrado="C#7sus4/Db7sus4" data-trastes="[2, 4, 2, 2]" data-dedos="[1, 3, 1, 1]" data-barra='{"cuerdas": [1, 2, 3, 4], "traste": 2, "dedo": 1}'></div>
+        <div data-raiz="Do#/Reb" data-tipo="séptima con novena menor" data-cifrado="C#7b9/Db7b9" data-trastes="[2, 3, 2, 3]" data-dedos="[1, 3, 2, 4]"></div>
+        <div data-raiz="Do#/Reb" data-tipo="séptima con novena mayor" data-cifrado="C#7(9)/Db7(9)" data-trastes="[2, 3, 2, 4]" data-dedos="[1, 3, 2, 4]" data-barra='{"cuerdas": [1, 2, 3, 4], "traste": 2, "dedo": 1}'></div>
+
+        <div data-raiz="Re" data-tipo="Mayor" data-cifrado="D" data-trastes="[0, 0, 0, 3]" data-dedos="[0, 0, 0, 4]"></div>
+        <div data-raiz="Re" data-tipo="séptima" data-cifrado="D7" data-trastes="[0, 0, 0, 1]" data-dedos="[0, 0, 0, 1]"></div>
+        <div data-raiz="Re" data-tipo="menor" data-cifrado="Dm" data-trastes="[0, 3, 3, 3]" data-dedos="[0, 2, 3, 4]"></div>
+        <div data-raiz="Re" data-tipo="aumentado" data-cifrado="Daug" data-trastes="[1, 0, 0, 3]" data-dedos="[1, 0, 0, 4]"></div>
+        <div data-raiz="Re" data-tipo="semidisminuido" data-cifrado="Dø" data-trastes="[3, 3, 2, 3]" data-dedos="[3, 2, 1, 4]"></div>
+        <div data-raiz="Re" data-tipo="disminuido séptima" data-cifrado="Dº7" data-trastes="[2, 3, 2, 3]" data-dedos="[1, 3, 2, 4]"></div>
+        <div data-raiz="Re" data-tipo="séptima con cuarta suspendida" data-cifrado="D7sus4" data-trastes="[0, 0, 1, 1]" data-dedos="[0, 0, 1, 2]"></div>
+        <div data-raiz="Re" data-tipo="séptima con novena menor" data-cifrado="D7b9" data-trastes="[0, 1, 0, 1]" data-dedos="[0, 1, 0, 2]"></div>
+        <div data-raiz="Re" data-tipo="séptima con novena mayor" data-cifrado="D7(9)" data-trastes="[0, 2, 0, 1]" data-dedos="[0, 2, 0, 1]"></div>
+
+        <div data-raiz="Re#/Mib" data-tipo="Mayor" data-cifrado="D#/Eb" data-trastes="[1, 1, 1, 4]" data-dedos="[1, 1, 1, 4]" data-barra='{"cuerdas": [1, 2, 3, 4], "traste": 1, "dedo": 1}'></div>
+        <div data-raiz="Re#/Mib" data-tipo="séptima" data-cifrado="D#7/Eb7" data-trastes="[1, 1, 1, 2]" data-dedos="[1, 2, 3, 4]"></div>
+        <div data-raiz="Re#/Mib" data-tipo="menor" data-cifrado="D#m/Ebm" data-trastes="[6, 4, 4, 4]" data-dedos="[3, 1, 1, 1]" data-barra='{"cuerdas": [1, 2, 3, 4], "traste": 4, "dedo": 1}'></div>
+        <div data-raiz="Re#/Mib" data-tipo="aumentado" data-cifrado="D#aug/Ebaug" data-trastes="[2, 1, 1, 4]" data-dedos="[2, 1, 1, 4]" data-barra='{"cuerdas": [2, 3], "traste": 1, "dedo": 1}'></div>
+        <div data-raiz="Re#/Mib" data-tipo="semidisminuido" data-cifrado="D#ø/Ebø" data-trastes="[0, 1, 0, 2]" data-dedos="[0, 1, 0, 2]"></div>
+        <div data-raiz="Re#/Mib" data-tipo="disminuido séptima" data-cifrado="D#o7/Ebo7" data-trastes="[0, 1, 0, 1]" data-dedos="[0, 1, 0, 2]"></div>
+        <div data-raiz="Re#/Mib" data-tipo="séptima con cuarta suspendida" data-cifrado="D#7sus4/Eb7sus4" data-trastes="[1, 1, 2, 2]" data-dedos="[1, 2, 3, 4]"></div>
+        <div data-raiz="Re#/Mib" data-tipo="séptima con novena menor" data-cifrado="D#7b9/Eb7b9" data-trastes="[1, 2, 1, 2]" data-dedos="[1, 3, 2, 4]"></div>
+        <div data-raiz="Re#/Mib" data-tipo="séptima con novena mayor" data-cifrado="D#7(9)/Eb7(9)" data-trastes="[1, 3, 1, 2]" data-dedos="[1, 3, 1, 2]" data-barra='{"cuerdas": [1, 2, 3, 4], "traste": 1, "dedo": 1}'></div>
+
+        <div data-raiz="Mi" data-tipo="Mayor" data-cifrado="E" data-trastes="[2, 2, 2, 0]" data-dedos="[2, 3, 4, 0]"></div>
+        <div data-raiz="Mi" data-tipo="séptima" data-cifrado="E7" data-trastes="[2, 2, 2, 3]" data-dedos="[1, 2, 3, 4]"></div>
+        <div data-raiz="Mi" data-tipo="menor" data-cifrado="Em" data-trastes="[2, 2, 1, 0]" data-dedos="[2, 3, 1, 0]"></div>
+        <div data-raiz="Mi" data-tipo="aumentado" data-cifrado="Eaug" data-trastes="[3, 2, 2, 5]" data-dedos="[2, 3, 4, 1]" data-barra='{"cuerdas": [2, 3], "traste": 2, "dedo": 1}'></div>
+        <div data-raiz="Mi" data-tipo="semidisminuido" data-cifrado="Eø" data-trastes="[1, 2, 1, 3]" data-dedos="[1, 2, 1, 4]"></div>
+        <div data-raiz="Mi" data-tipo="disminuido séptima" data-cifrado="Eo7" data-trastes="[1, 2, 1, 2]" data-dedos="[1, 3, 2, 4]"></div>
+        <div data-raiz="Mi" data-tipo="séptima con cuarta suspendida" data-cifrado="E7sus4" data-trastes="[2, 2, 3, 3]" data-dedos="[1, 2, 3, 4]"></div>
+        <div data-raiz="Mi" data-tipo="séptima con novena menor" data-cifrado="E7b9" data-trastes="[2, 3, 2, 3]" data-dedos="[1, 3, 2, 4]"></div>
+        <div data-raiz="Mi" data-tipo="séptima con novena mayor" data-cifrado="E7(9)" data-trastes="[2, 4, 2, 3]" data-dedos="[1, 3, 1, 2]" data-barra='{"cuerdas": [1, 2, 3, 4], "traste": 2, "dedo": 1}'></div>
+
+        <div data-raiz="Fa" data-tipo="Mayor" data-cifrado="F" data-trastes="[0, 3, 3, 1]" data-dedos="[0, 2, 3, 1]"></div>
+        <div data-raiz="Fa" data-tipo="séptima" data-cifrado="F7" data-trastes="[3, 3, 3, 4]" data-dedos="[1, 2, 3, 4]"></div>
+        <div data-raiz="Fa" data-tipo="menor" data-cifrado="Fm" data-trastes="[3, 3, 2, 1]" data-dedos="[3, 4, 2, 1]" data-barra='{"cuerdas": [1, 2, 3, 4], "traste": 1, "dedo": 1}'></div>
+        <div data-raiz="Fa" data-tipo="aumentado" data-cifrado="Faug" data-trastes="[0, 3, 3, 2]" data-dedos="[0, 3, 4, 1]"></div>
+        <div data-raiz="Fa" data-tipo="semidisminuido" data-cifrado="Fø" data-trastes="[2, 3, 2, 4]" data-dedos="[1, 2, 1, 4]"></div>
+        <div data-raiz="Fa" data-tipo="disminuido séptima" data-cifrado="Fo7" data-trastes="[2, 3, 2, 3]" data-dedos="[1, 3, 2, 4]"></div>
+        <div data-raiz="Fa" data-tipo="séptima con cuarta suspendida" data-cifrado="F7sus4" data-trastes="[3, 3, 4, 4]" data-dedos="[1, 2, 3, 4]"></div>
+        <div data-raiz="Fa" data-tipo="séptima con novena menor" data-cifrado="F7b9" data-trastes="[3, 4, 3, 4]" data-dedos="[1, 3, 2, 4]"></div>
+        <div data-raiz="Fa" data-tipo="séptima con novena mayor" data-cifrado="F7(9)" data-trastes="[3, 5, 3, 4]" data-dedos="[1, 3, 1, 2]" data-barra='{"cuerdas": [1, 2, 3, 4], "traste": 3, "dedo": 1}'></div>
+
+        <div data-raiz="Fa#/Solb" data-tipo="Mayor" data-cifrado="F#/Gb" data-trastes="[4, 4, 4, 2]" data-dedos="[2, 3, 4, 1]"></div>
+        <div data-raiz="Fa#/Solb" data-tipo="séptima" data-cifrado="F#7/Gb7" data-trastes="[1, 2, 0, 2]" data-dedos="[1, 2, 0, 3]"></div>
+        <div data-raiz="Fa#/Solb" data-tipo="menor" data-cifrado="F#m/Gbm" data-trastes="[0, 4, 3, 2]" data-dedos="[0, 3, 2, 1]"></div>
+        <div data-raiz="Fa#/Solb" data-tipo="aumentado" data-cifrado="F#aug/Gbaug" data-trastes="[1, 4, 4, 3]" data-dedos="[1, 3, 4, 2]"></div>
+        <div data-raiz="Fa#/Solb" data-tipo="semidisminuido" data-cifrado="F#ø/Gbø" data-trastes="[0, 2, 0, 1]" data-dedos="[0, 2, 0, 1]"></div>
+        <div data-raiz="Fa#/Solb" data-tipo="disminuido séptima" data-cifrado="F#o7/Gbo7" data-trastes="[0, 1, 0, 1]" data-dedos="[0, 1, 0, 2]"></div>
+        <div data-raiz="Fa#/Solb" data-tipo="séptima con cuarta suspendida" data-cifrado="F#7sus4/Gb7sus4" data-trastes="[2, 2, 0, 2]" data-dedos="[1, 2, 0, 3]"></div>
+        <div data-raiz="Fa#/Solb" data-tipo="séptima con novena menor" data-cifrado="F#7b9/Gb7b9" data-trastes="[1, 2, 1, 2]" data-dedos="[1, 3, 2, 4]"></div>
+        <div data-raiz="Fa#/Solb" data-tipo="séptima con novena mayor" data-cifrado="F#7(9)/Gb7(9)" data-trastes="[1, 2, 2, 2]" data-dedos="[1, 2, 3, 4]"></div>
+
+        <div data-raiz="Sol" data-tipo="Mayor" data-cifrado="G" data-trastes="[2, 0, 1, 0]" data-dedos="[2, 0, 1, 0]"></div>
+        <div data-raiz="Sol" data-tipo="séptima" data-cifrado="G7" data-trastes="[2, 3, 1, 3]" data-dedos="[2, 3, 1, 4]"></div>
+        <div data-raiz="Sol" data-tipo="menor" data-cifrado="Gm" data-trastes="[1, 0, 1, 3]" data-dedos="[1, 0, 2, 4]"></div>
+        <div data-raiz="Sol" data-tipo="aumentado" data-cifrado="Gaug" data-trastes="[2, 1, 1, 0]" data-dedos="[2, 1, 1, 0]" data-barra='{"cuerdas": [2, 3], "traste": 1, "dedo": 1}'></div>
+        <div data-raiz="Sol" data-tipo="semidisminuido" data-cifrado="Gø" data-trastes="[1, 3, 1, 2]" data-dedos="[1, 3, 1, 2]" data-barra='{"cuerdas": [1, 2, 3, 4], "traste": 1, "dedo": 1}'></div>
+        <div data-raiz="Sol" data-tipo="disminuido séptima" data-cifrado="Go7" data-trastes="[1, 2, 1, 2]" data-dedos="[1, 3, 2, 4]"></div>
+        <div data-raiz="Sol" data-tipo="séptima con cuarta suspendida" data-cifrado="G7sus4" data-trastes="[3, 3, 1, 3]" data-dedos="[2, 3, 1, 4]"></div>
+        <div data-raiz="Sol" data-tipo="séptima con novena menor" data-cifrado="G7b9" data-trastes="[2, 3, 2, 3]" data-dedos="[1, 3, 2, 4]"></div>
+        <div data-raiz="Sol" data-tipo="séptima con novena mayor" data-cifrado="G7(9)" data-trastes="[2, 3, 3, 3]" data-dedos="[1, 2, 3, 4]"></div>
+
+        <div data-raiz="Sol#/Lab" data-tipo="Mayor" data-cifrado="G#/Ab" data-trastes="[3, 1, 2, 1]" data-dedos="[3, 1, 2, 1]" data-barra='{"cuerdas": [1, 2, 3, 4], "traste": 1, "dedo": 1}'></div>
+        <div data-raiz="Sol#/Lab" data-tipo="séptima" data-cifrado="G#7/Ab7" data-trastes="[3, 4, 2, 4]" data-dedos="[2, 3, 1, 4]"></div>
+        <div data-raiz="Sol#/Lab" data-tipo="menor" data-cifrado="G#m/Abm" data-trastes="[2, 1, 2, 0]" data-dedos="[2, 1, 3, 0]"></div>
+        <div data-raiz="Sol#/Lab" data-tipo="aumentado" data-cifrado="G#aug/Abaug" data-trastes="[3, 2, 2, 1]" data-dedos="[4, 2, 3, 1]"></div>
+        <div data-raiz="Sol#/Lab" data-tipo="semidisminuido" data-cifrado="G#ø/Abø" data-trastes="[2, 4, 2, 3]" data-dedos="[1, 3, 1, 2]" data-barra='{"cuerdas": [1, 2, 3, 4], "traste": 2, "dedo": 1}'></div>
+        <div data-raiz="Sol#/Lab" data-tipo="disminuido séptima" data-cifrado="G#o7/Abo7" data-trastes="[2, 3, 2, 3]" data-dedos="[1, 3, 2, 4]"></div>
+        <div data-raiz="Sol#/Lab" data-tipo="séptima con cuarta suspendida" data-cifrado="G#7sus4/Ab7sus4" data-trastes="[4, 4, 2, 4]" data-dedos="[2, 3, 1, 4]"></div>
+        <div data-raiz="Sol#/Lab" data-tipo="séptima con novena menor" data-cifrado="G#7b9/Ab7b9" data-trastes="[3, 4, 3, 4]" data-dedos="[1, 3, 2, 4]"></div>
+        <div data-raiz="Sol#/Lab" data-tipo="séptima con novena mayor" data-cifrado="G#7(9)/Ab7(9)" data-trastes="[3, 4, 4, 4]" data-dedos="[1, 2, 3, 4]"></div>
+
+        <div data-raiz="La" data-tipo="Mayor" data-cifrado="A" data-trastes="[0, 2, 3, 2]" data-dedos="[0, 1, 3, 2]"></div>
+        <div data-raiz="La" data-tipo="séptima" data-cifrado="A7" data-trastes="[0, 2, 1, 2]" data-dedos="[0, 2, 1, 3]"></div>
+        <div data-raiz="La" data-tipo="menor" data-cifrado="Am" data-trastes="[0, 2, 3, 1]" data-dedos="[0, 2, 3, 1]"></div>
+        <div data-raiz="La" data-tipo="aumentado" data-cifrado="Aaug" data-trastes="[0, 3, 3, 2]" data-dedos="[0, 2, 3, 1]"></div>
+        <div data-raiz="La" data-tipo="semidisminuido" data-cifrado="Aø" data-trastes="[0, 1, 1, 1]" data-dedos="[0, 1, 2, 3]"></div>
+        <div data-raiz="La" data-tipo="disminuido séptima" data-cifrado="Ao7" data-trastes="[0, 1, 0, 1]" data-dedos="[0, 1, 0, 2]"></div>
+        <div data-raiz="La" data-tipo="séptima con cuarta suspendida" data-cifrado="A7sus4" data-trastes="[0, 2, 1, 3]" data-dedos="[0, 2, 1, 4]"></div>
+        <div data-raiz="La" data-tipo="séptima con novena menor" data-cifrado="A7b9" data-trastes="[1, 2, 1, 2]" data-dedos="[1, 3, 2, 4]"></div>
+        <div data-raiz="La" data-tipo="séptima con novena mayor" data-cifrado="A7(9)" data-trastes="[2, 2, 1, 2]" data-dedos="[2, 3, 1, 4]"></div>
+
+        <div data-raiz="La#/Sib" data-tipo="Mayor" data-cifrado="A#/Bb" data-trastes="[5, 3, 4, 3]" data-dedos="[3, 1, 2, 1]" data-barra='{"cuerdas": [1, 2, 3, 4], "traste": 3, "dedo": 1}'></div>
+        <div data-raiz="La#/Sib" data-tipo="séptima" data-cifrado="A#7/Bb7" data-trastes="[1, 3, 2, 3]" data-dedos="[1, 3, 2, 4]"></div>
+        <div data-raiz="La#/Sib" data-tipo="menor" data-cifrado="A#m/Bbm" data-trastes="[1, 3, 4, 2]" data-dedos="[1, 3, 4, 2]" data-barra='{"cuerdas": [1, 2, 3, 4], "traste": 1, "dedo": 1}'></div>
+        <div data-raiz="La#/Sib" data-tipo="aumentado" data-cifrado="A#aug/Bbaug" data-trastes="[5, 4, 4, 3]" data-dedos="[4, 2, 3, 1]"></div>
+        <div data-raiz="La#/Sib" data-tipo="semidisminuido" data-cifrado="A#ø/Bbø" data-trastes="[1, 2, 2, 2]" data-dedos="[1, 2, 3, 4]"></div>
+        <div data-raiz="La#/Sib" data-tipo="disminuido séptima" data-cifrado="A#o7/Bbo7" data-trastes="[1, 2, 1, 2]" data-dedos="[1, 3, 2, 4]"></div>
+        <div data-raiz="La#/Sib" data-tipo="séptima con cuarta suspendida" data-cifrado="A#7sus4/Bb7sus4" data-trastes="[1, 3, 2, 4]" data-dedos="[1, 3, 2, 4]"></div>
+        <div data-raiz="La#/Sib" data-tipo="séptima con novena menor" data-cifrado="A#7b9/Bb7b9" data-trastes="[2, 3, 2, 3]" data-dedos="[1, 3, 2, 4]"></div>
+        <div data-raiz="La#/Sib" data-tipo="séptima con novena mayor" data-cifrado="A#7(9)/Bb7(9)" data-trastes="[3, 3, 2, 3]" data-dedos="[2, 3, 1, 4]"></div>
+
+        <div data-raiz="Si" data-tipo="Mayor" data-cifrado="B" data-trastes="[2, 1, 0, 0]" data-dedos="[2, 1, 0, 0]"></div>
+        <div data-raiz="Si" data-tipo="séptima" data-cifrado="B7" data-trastes="[0, 1, 0, 0]" data-dedos="[0, 1, 0, 0]"></div>
+        <div data-raiz="Si" data-tipo="menor" data-cifrado="Bm" data-trastes="[2, 0, 0, 0]" data-dedos="[2, 0, 0, 0]"></div>
+        <div data-raiz="Si" data-tipo="aumentado" data-cifrado="Baug" data-trastes="[2, 1, 1, 4]" data-dedos="[2, 1, 1, 4]" data-barra='{"cuerdas": [2, 3], "traste": 1, "dedo": 1}'></div>
+        <div data-raiz="Si" data-tipo="semidisminuido" data-cifrado="Bø" data-trastes="[2, 3, 3, 3]" data-dedos="[1, 2, 3, 4]"></div>
+        <div data-raiz="Si" data-tipo="disminuido séptima" data-cifrado="Bo7" data-trastes="[2, 3, 2, 3]" data-dedos="[1, 3, 2, 4]"></div>
+        <div data-raiz="Si" data-tipo="séptima con cuarta suspendida" data-cifrado="B7sus4" data-trastes="[0, 2, 0, 0]" data-dedos="[0, 2, 0, 0]"></div>
+        <div data-raiz="Si" data-tipo="séptima con novena menor" data-cifrado="B7b9" data-trastes="[0, 1, 0, 1]" data-dedos="[0, 1, 0, 2]"></div>
+        <div data-raiz="Si" data-tipo="séptima con novena mayor" data-cifrado="B7(9)" data-trastes="[0, 1, 0, 2]" data-dedos="[0, 1, 0, 3]"></div>
+    </div>
+
+    <script>
+    // ============================================================
+    // CONFIGURACIÓN BÁSICA
+    // ============================================================
+    const TUNINGS = {
+        reentrante: { freqs: [220.00, 293.66, 369.99, 246.94], openNotes: [9, 2, 6, 11] },
+        ascendente: { freqs: [174.61, 233.08, 293.66, 392.00], openNotes: [5, 10, 2, 7] }
+    };
+    const ROOT_SEMITONES = {
+        "Do": 0, "Do#/Reb": 1, "Re": 2, "Re#/Mib": 3, "Mi": 4, "Fa": 5,
+        "Fa#/Solb": 6, "Sol": 7, "Sol#/Lab": 8, "La": 9, "La#/Sib": 10, "Si": 11
+    };
+    const SEMITONE_ROOTS = {
+        0: "Do", 1: "Do#/Reb", 2: "Re", 3: "Re#/Mib", 4: "Mi", 5: "Fa",
+        6: "Fa#/Solb", 7: "Sol", 8: "Sol#/Lab", 9: "La", 10: "La#/Sib", 11: "Si"
+    };
+    let currentTuning = 'reentrante';
+    const ordenRaices = ["Do","Do#/Reb","Re","Re#/Mib","Mi","Fa","Fa#/Solb","Sol","Sol#/Lab","La","La#/Sib","Si"];
+    const ordenTipos = ["Mayor","séptima","menor","aumentado","semidisminuido","disminuido séptima","séptima con cuarta suspendida","séptima con novena menor","séptima con novena mayor"];
+
+    function getTuning() { return TUNINGS[currentTuning]; }
+    function $(id) { return document.getElementById(id); }
+    function getValue(id) { return $(id).value; }
+    function setValue(id, v) { $(id).value = v; }
+
+    // ============================================================
+    // PROGRESIONES con nombre completo + abreviatura
+    // ============================================================
+    const progresionesMayores = {
+        "P1":   { labelBold: "Progresión 1",     labelLight: " (P1): V7 - I",                                    grados: ["V7", "I"] },
+        "P2":   { labelBold: "Progresión 2",     labelLight: " (P2): IIm - V7 - I",                               grados: ["IIm", "V7", "I"] },
+        "P3":   { labelBold: "Progresión 3",     labelLight: " (P3): VI7 - IIm - V7 - I",                         grados: ["VI7", "IIm", "V7", "I"] },
+        "P4":   { labelBold: "Progresión 4",     labelLight: " (P4): IV - V7 - I",                                grados: ["IV", "V7", "I"] },
+        "P5":   { labelBold: "Progresión 5",     labelLight: " (P5): I7 - IV - V7 - I",                           grados: ["I7", "IV", "V7", "I"] },
+        "P6":   { labelBold: "Progresión 6",     labelLight: " (P6): IV - I - V7 - I",                            grados: ["IV", "I", "V7", "I"] },
+        "P6_1": { labelBold: "Progresión 6.1",   labelLight: " (P6.1): IV - IVm - I - VI7 - IIm - V7 - I",        grados: ["IV", "IVm", "I", "VI7", "IIm", "V7", "I"] },
+        "P7":   { labelBold: "Progresión 7",     labelLight: " (P7): I7 - IV - I - V7 - I",                       grados: ["I7", "IV", "I", "V7", "I"] },
+        "P7_1": { labelBold: "Progresión 7.1",   labelLight: " (P7.1): I7 - IV - IVm - I - VI7 - IIm - V7 - I",   grados: ["I7", "IV", "IVm", "I", "VI7", "IIm", "V7", "I"] }
+    };
+    const progresionesMenores = {
+        "P1m":   { labelBold: "Progresión 1m",   labelLight: " (P1m): V7 - Im",                                       grados: ["V7", "Im"] },
+        "P2m":   { labelBold: "Progresión 2m",   labelLight: " (P2m): IIø – V7 – Im",                                 grados: ["IIo", "V7", "Im"] },
+        "P3m":   { labelBold: "Progresión 3m",   labelLight: " (P3m): No aplica",                                     grados: [], noAplica: true },
+        "P4m":   { labelBold: "Progresión 4m",   labelLight: " (P4m): IVm - V7 - Im",                                 grados: ["IVm", "V7", "Im"] },
+        "P5m":   { labelBold: "Progresión 5m",   labelLight: " (P5m): I7 - IVm - Im – V7 – Im",                       grados: ["I7", "IVm", "Im", "V7", "Im"] },
+        "P6m":   { labelBold: "Progresión 6m",   labelLight: " (P6m): IVm – Im - V7 – Im",                            grados: ["IVm", "Im", "V7", "Im"] },
+        "P7m":   { labelBold: "Progresión 7m",   labelLight: " (P7m): I7 - IVm - Im - V7 - Im",                       grados: ["I7", "IVm", "Im", "V7", "Im"] },
+        "P6_1m": { labelBold: "Progresión 6.1m", labelLight: " (P6.1m): IVm - VIIb7 - IIIb - VIb - IIø - V7 - Im",    grados: ["IVm", "VIIb7", "IIIb", "VIb", "IIo", "V7", "Im"] },
+        "P7_1m": { labelBold: "Progresión 7.1m", labelLight: " (P7.1m): I7 - IVm - VIIb7 - IIIb - VIb - IIø - V7 - Im",grados: ["I7", "IVm", "VIIb7", "IIIb", "VIb", "IIo", "V7", "Im"] }
+    };
+    const progresionesOtras = {
+        "O1": { labelBold: "Otra progresión 1", labelLight: " (O1): I - IV - IIm - V7 - I", grados: ["I", "IV", "IIm", "V7", "I"] },
+        "O2": { labelBold: "Otra progresión 2", labelLight: " (O2): I - V7 - IV - IIm - I", grados: ["I", "V7", "IV", "IIm", "I"] },
+        "O3": { labelBold: "Otra progresión 3", labelLight: " (O3): IV - I - V7 - IIm - I", grados: ["IV", "I", "V7", "IIm", "I"] }
+    };
+
+    // ============================================================
+    // ESCALAS
+    // ============================================================
+    const escalasMayores = {
+        "Do": { I: {raiz: "Do", tipo: "Mayor"}, IIm: {raiz: "Re", tipo: "menor"}, IIIm: {raiz: "Mi", tipo: "menor"}, IV: {raiz: "Fa", tipo: "Mayor"}, V: {raiz: "Sol", tipo: "Mayor"}, V7: {raiz: "Sol", tipo: "séptima"}, VIm: {raiz: "La", tipo: "menor"}, VIIo: {raiz: "Si", tipo: "semidisminuido"} },
+        "Do#/Reb": { I: {raiz: "Do#/Reb", tipo: "Mayor"}, IIm: {raiz: "Re#/Mib", tipo: "menor"}, IIIm: {raiz: "Fa", tipo: "menor"}, IV: {raiz: "Fa#/Solb", tipo: "Mayor"}, V: {raiz: "Sol#/Lab", tipo: "Mayor"}, V7: {raiz: "Sol#/Lab", tipo: "séptima"}, VIm: {raiz: "La#/Sib", tipo: "menor"}, VIIo: {raiz: "Do", tipo: "semidisminuido"} },
+        "Re": { I: {raiz: "Re", tipo: "Mayor"}, IIm: {raiz: "Mi", tipo: "menor"}, IIIm: {raiz: "Fa#/Solb", tipo: "menor"}, IV: {raiz: "Sol", tipo: "Mayor"}, V: {raiz: "La", tipo: "Mayor"}, V7: {raiz: "La", tipo: "séptima"}, VIm: {raiz: "Si", tipo: "menor"}, VIIo: {raiz: "Do#/Reb", tipo: "semidisminuido"} },
+        "Re#/Mib": { I: {raiz: "Re#/Mib", tipo: "Mayor"}, IIm: {raiz: "Fa", tipo: "menor"}, IIIm: {raiz: "Sol", tipo: "menor"}, IV: {raiz: "Sol#/Lab", tipo: "Mayor"}, V: {raiz: "La#/Sib", tipo: "Mayor"}, V7: {raiz: "La#/Sib", tipo: "séptima"}, VIm: {raiz: "Do", tipo: "menor"}, VIIo: {raiz: "Re", tipo: "semidisminuido"} },
+        "Mi": { I: {raiz: "Mi", tipo: "Mayor"}, IIm: {raiz: "Fa#/Solb", tipo: "menor"}, IIIm: {raiz: "Sol#/Lab", tipo: "menor"}, IV: {raiz: "La", tipo: "Mayor"}, V: {raiz: "Si", tipo: "Mayor"}, V7: {raiz: "Si", tipo: "séptima"}, VIm: {raiz: "Do#/Reb", tipo: "menor"}, VIIo: {raiz: "Re#/Mib", tipo: "semidisminuido"} },
+        "Fa": { I: {raiz: "Fa", tipo: "Mayor"}, IIm: {raiz: "Sol", tipo: "menor"}, IIIm: {raiz: "La", tipo: "menor"}, IV: {raiz: "La#/Sib", tipo: "Mayor"}, V: {raiz: "Do", tipo: "Mayor"}, V7: {raiz: "Do", tipo: "séptima"}, VIm: {raiz: "Re", tipo: "menor"}, VIIo: {raiz: "Mi", tipo: "semidisminuido"} },
+        "Fa#/Solb": { I: {raiz: "Fa#/Solb", tipo: "Mayor"}, IIm: {raiz: "Sol#/Lab", tipo: "menor"}, IIIm: {raiz: "La#/Sib", tipo: "menor"}, IV: {raiz: "Si", tipo: "Mayor"}, V: {raiz: "Do#/Reb", tipo: "Mayor"}, V7: {raiz: "Do#/Reb", tipo: "séptima"}, VIm: {raiz: "Re#/Mib", tipo: "menor"}, VIIo: {raiz: "Fa", tipo: "semidisminuido"} },
+        "Sol": { I: {raiz: "Sol", tipo: "Mayor"}, IIm: {raiz: "La", tipo: "menor"}, IIIm: {raiz: "Si", tipo: "menor"}, IV: {raiz: "Do", tipo: "Mayor"}, V: {raiz: "Re", tipo: "Mayor"}, V7: {raiz: "Re", tipo: "séptima"}, VIm: {raiz: "Mi", tipo: "menor"}, VIIo: {raiz: "Fa#/Solb", tipo: "semidisminuido"} },
+        "Sol#/Lab": { I: {raiz: "Sol#/Lab", tipo: "Mayor"}, IIm: {raiz: "La#/Sib", tipo: "menor"}, IIIm: {raiz: "Do", tipo: "menor"}, IV: {raiz: "Do#/Reb", tipo: "Mayor"}, V: {raiz: "Re#/Mib", tipo: "Mayor"}, V7: {raiz: "Re#/Mib", tipo: "séptima"}, VIm: {raiz: "Fa", tipo: "menor"}, VIIo: {raiz: "Sol", tipo: "semidisminuido"} },
+        "La": { I: {raiz: "La", tipo: "Mayor"}, IIm: {raiz: "Si", tipo: "menor"}, IIIm: {raiz: "Do#/Reb", tipo: "menor"}, IV: {raiz: "Re", tipo: "Mayor"}, V: {raiz: "Mi", tipo: "Mayor"}, V7: {raiz: "Mi", tipo: "séptima"}, VIm: {raiz: "Fa#/Solb", tipo: "menor"}, VIIo: {raiz: "Sol#/Lab", tipo: "semidisminuido"} },
+        "La#/Sib": { I: {raiz: "La#/Sib", tipo: "Mayor"}, IIm: {raiz: "Do", tipo: "menor"}, IIIm: {raiz: "Re", tipo: "menor"}, IV: {raiz: "Re#/Mib", tipo: "Mayor"}, V: {raiz: "Fa", tipo: "Mayor"}, V7: {raiz: "Fa", tipo: "séptima"}, VIm: {raiz: "Sol", tipo: "menor"}, VIIo: {raiz: "La", tipo: "semidisminuido"} },
+        "Si": { I: {raiz: "Si", tipo: "Mayor"}, IIm: {raiz: "Do#/Reb", tipo: "menor"}, IIIm: {raiz: "Re#/Mib", tipo: "menor"}, IV: {raiz: "Mi", tipo: "Mayor"}, V: {raiz: "Fa#/Solb", tipo: "Mayor"}, V7: {raiz: "Fa#/Solb", tipo: "séptima"}, VIm: {raiz: "Sol#/Lab", tipo: "menor"}, VIIo: {raiz: "La#/Sib", tipo: "semidisminuido"} }
+    };
+    const escalasMenores = {
+        "Do": { Im: {raiz: "Do", tipo: "menor"}, IIo: {raiz: "Re", tipo: "semidisminuido"}, IIIb: {raiz: "Re#/Mib", tipo: "Mayor"}, IVm: {raiz: "Fa", tipo: "menor"}, Vm: {raiz: "Sol", tipo: "menor"}, VIb: {raiz: "Sol#/Lab", tipo: "Mayor"}, VIIb7: {raiz: "La#/Sib", tipo: "séptima"} },
+        "Do#/Reb": { Im: {raiz: "Do#/Reb", tipo: "menor"}, IIo: {raiz: "Re#/Mib", tipo: "semidisminuido"}, IIIb: {raiz: "Mi", tipo: "Mayor"}, IVm: {raiz: "Fa#/Solb", tipo: "menor"}, Vm: {raiz: "Sol#/Lab", tipo: "menor"}, VIb: {raiz: "La", tipo: "Mayor"}, VIIb7: {raiz: "Si", tipo: "séptima"} },
+        "Re": { Im: {raiz: "Re", tipo: "menor"}, IIo: {raiz: "Mi", tipo: "semidisminuido"}, IIIb: {raiz: "Fa", tipo: "Mayor"}, IVm: {raiz: "Sol", tipo: "menor"}, Vm: {raiz: "La", tipo: "menor"}, VIb: {raiz: "La#/Sib", tipo: "Mayor"}, VIIb7: {raiz: "Do", tipo: "séptima"} },
+        "Re#/Mib": { Im: {raiz: "Re#/Mib", tipo: "menor"}, IIo: {raiz: "Fa", tipo: "semidisminuido"}, IIIb: {raiz: "Fa#/Solb", tipo: "Mayor"}, IVm: {raiz: "Sol#/Lab", tipo: "menor"}, Vm: {raiz: "La#/Sib", tipo: "menor"}, VIb: {raiz: "Si", tipo: "Mayor"}, VIIb7: {raiz: "Do#/Reb", tipo: "séptima"} },
+        "Mi": { Im: {raiz: "Mi", tipo: "menor"}, IIo: {raiz: "Fa#/Solb", tipo: "semidisminuido"}, IIIb: {raiz: "Sol", tipo: "Mayor"}, IVm: {raiz: "La", tipo: "menor"}, Vm: {raiz: "Si", tipo: "menor"}, VIb: {raiz: "Do", tipo: "Mayor"}, VIIb7: {raiz: "Re", tipo: "séptima"} },
+        "Fa": { Im: {raiz: "Fa", tipo: "menor"}, IIo: {raiz: "Sol", tipo: "semidisminuido"}, IIIb: {raiz: "Sol#/Lab", tipo: "Mayor"}, IVm: {raiz: "La#/Sib", tipo: "menor"}, Vm: {raiz: "Do", tipo: "menor"}, VIb: {raiz: "Do#/Reb", tipo: "Mayor"}, VIIb7: {raiz: "Re#/Mib", tipo: "séptima"} },
+        "Fa#/Solb": { Im: {raiz: "Fa#/Solb", tipo: "menor"}, IIo: {raiz: "Sol#/Lab", tipo: "semidisminuido"}, IIIb: {raiz: "La", tipo: "Mayor"}, IVm: {raiz: "Si", tipo: "menor"}, Vm: {raiz: "Do#/Reb", tipo: "menor"}, VIb: {raiz: "Re", tipo: "Mayor"}, VIIb7: {raiz: "Mi", tipo: "séptima"} },
+        "Sol": { Im: {raiz: "Sol", tipo: "menor"}, IIo: {raiz: "La", tipo: "semidisminuido"}, IIIb: {raiz: "La#/Sib", tipo: "Mayor"}, IVm: {raiz: "Do", tipo: "menor"}, Vm: {raiz: "Re", tipo: "menor"}, VIb: {raiz: "Re#/Mib", tipo: "Mayor"}, VIIb7: {raiz: "Fa", tipo: "séptima"} },
+        "Sol#/Lab": { Im: {raiz: "Sol#/Lab", tipo: "menor"}, IIo: {raiz: "La#/Sib", tipo: "semidisminuido"}, IIIb: {raiz: "Si", tipo: "Mayor"}, IVm: {raiz: "Do#/Reb", tipo: "menor"}, Vm: {raiz: "Re#/Mib", tipo: "menor"}, VIb: {raiz: "Fa", tipo: "Mayor"}, VIIb7: {raiz: "Fa#/Solb", tipo: "séptima"} },
+        "La": { Im: {raiz: "La", tipo: "menor"}, IIo: {raiz: "Si", tipo: "semidisminuido"}, IIIb: {raiz: "Do", tipo: "Mayor"}, IVm: {raiz: "Re", tipo: "menor"}, Vm: {raiz: "Mi", tipo: "menor"}, VIb: {raiz: "Fa", tipo: "Mayor"}, VIIb7: {raiz: "Sol", tipo: "séptima"} },
+        "La#/Sib": { Im: {raiz: "La#/Sib", tipo: "menor"}, IIo: {raiz: "Do", tipo: "semidisminuido"}, IIIb: {raiz: "Do#/Reb", tipo: "Mayor"}, IVm: {raiz: "Re#/Mib", tipo: "menor"}, Vm: {raiz: "Fa", tipo: "menor"}, VIb: {raiz: "Fa#/Solb", tipo: "Mayor"}, VIIb7: {raiz: "Sol#/Lab", tipo: "séptima"} },
+        "Si": { Im: {raiz: "Si", tipo: "menor"}, IIo: {raiz: "Do#/Reb", tipo: "semidisminuido"}, IIIb: {raiz: "Re", tipo: "Mayor"}, IVm: {raiz: "Mi", tipo: "menor"}, Vm: {raiz: "Fa#/Solb", tipo: "menor"}, VIb: {raiz: "Sol", tipo: "Mayor"}, VIIb7: {raiz: "La", tipo: "séptima"} }
+    };
+    const escalasMenorArmonica = {
+        "Do": { Im: {raiz: "Do", tipo: "menor"}, IIo: {raiz: "Re", tipo: "semidisminuido"}, III: {raiz: "Re#/Mib", tipo: "aumentado"}, IVm: {raiz: "Fa", tipo: "menor"}, V7: {raiz: "Sol", tipo: "séptima"}, VI: {raiz: "Sol#/Lab", tipo: "Mayor"}, VIIo7: {raiz: "Si", tipo: "disminuido séptima"} },
+        "Do#/Reb": { Im: {raiz: "Do#/Reb", tipo: "menor"}, IIo: {raiz: "Re#/Mib", tipo: "semidisminuido"}, III: {raiz: "Mi", tipo: "aumentado"}, IVm: {raiz: "Fa#/Solb", tipo: "menor"}, V7: {raiz: "Sol#/Lab", tipo: "séptima"}, VI: {raiz: "La", tipo: "Mayor"}, VIIo7: {raiz: "Do", tipo: "disminuido séptima"} },
+        "Re": { Im: {raiz: "Re", tipo: "menor"}, IIo: {raiz: "Mi", tipo: "semidisminuido"}, III: {raiz: "Fa", tipo: "aumentado"}, IVm: {raiz: "Sol", tipo: "menor"}, V7: {raiz: "La", tipo: "séptima"}, VI: {raiz: "La#/Sib", tipo: "Mayor"}, VIIo7: {raiz: "Do#/Reb", tipo: "disminuido séptima"} },
+        "Re#/Mib": { Im: {raiz: "Re#/Mib", tipo: "menor"}, IIo: {raiz: "Fa", tipo: "semidisminuido"}, III: {raiz: "Fa#/Solb", tipo: "aumentado"}, IVm: {raiz: "Sol#/Lab", tipo: "menor"}, V7: {raiz: "La#/Sib", tipo: "séptima"}, VI: {raiz: "Si", tipo: "Mayor"}, VIIo7: {raiz: "Re", tipo: "disminuido séptima"} },
+        "Mi": { Im: {raiz: "Mi", tipo: "menor"}, IIo: {raiz: "Fa#/Solb", tipo: "semidisminuido"}, III: {raiz: "Sol", tipo: "aumentado"}, IVm: {raiz: "La", tipo: "menor"}, V7: {raiz: "Si", tipo: "séptima"}, VI: {raiz: "Do", tipo: "Mayor"}, VIIo7: {raiz: "Re#/Mib", tipo: "disminuido séptima"} },
+        "Fa": { Im: {raiz: "Fa", tipo: "menor"}, IIo: {raiz: "Sol", tipo: "semidisminuido"}, III: {raiz: "Sol#/Lab", tipo: "aumentado"}, IVm: {raiz: "La#/Sib", tipo: "menor"}, V7: {raiz: "Do", tipo: "séptima"}, VI: {raiz: "Do#/Reb", tipo: "Mayor"}, VIIo7: {raiz: "Mi", tipo: "disminuido séptima"} },
+        "Fa#/Solb": { Im: {raiz: "Fa#/Solb", tipo: "menor"}, IIo: {raiz: "Sol#/Lab", tipo: "semidisminuido"}, III: {raiz: "La", tipo: "aumentado"}, IVm: {raiz: "Si", tipo: "menor"}, V7: {raiz: "Do#/Reb", tipo: "séptima"}, VI: {raiz: "Re", tipo: "Mayor"}, VIIo7: {raiz: "Fa", tipo: "disminuido séptima"} },
+        "Sol": { Im: {raiz: "Sol", tipo: "menor"}, IIo: {raiz: "La", tipo: "semidisminuido"}, III: {raiz: "La#/Sib", tipo: "aumentado"}, IVm: {raiz: "Do", tipo: "menor"}, V7: {raiz: "Re", tipo: "séptima"}, VI: {raiz: "Re#/Mib", tipo: "Mayor"}, VIIo7: {raiz: "Fa#/Solb", tipo: "disminuido séptima"} },
+        "Sol#/Lab": { Im: {raiz: "Sol#/Lab", tipo: "menor"}, IIo: {raiz: "La#/Sib", tipo: "semidisminuido"}, III: {raiz: "Si", tipo: "aumentado"}, IVm: {raiz: "Do#/Reb", tipo: "menor"}, V7: {raiz: "Re#/Mib", tipo: "séptima"}, VI: {raiz: "Mi", tipo: "Mayor"}, VIIo7: {raiz: "Sol", tipo: "disminuido séptima"} },
+        "La": { Im: {raiz: "La", tipo: "menor"}, IIo: {raiz: "Si", tipo: "semidisminuido"}, III: {raiz: "Do", tipo: "aumentado"}, IVm: {raiz: "Re", tipo: "menor"}, V7: {raiz: "Mi", tipo: "séptima"}, VI: {raiz: "Fa", tipo: "Mayor"}, VIIo7: {raiz: "Sol#/Lab", tipo: "disminuido séptima"} },
+        "La#/Sib": { Im: {raiz: "La#/Sib", tipo: "menor"}, IIo: {raiz: "Do", tipo: "semidisminuido"}, III: {raiz: "Do#/Reb", tipo: "aumentado"}, IVm: {raiz: "Re#/Mib", tipo: "menor"}, V7: {raiz: "Fa", tipo: "séptima"}, VI: {raiz: "Fa#/Solb", tipo: "Mayor"}, VIIo7: {raiz: "La", tipo: "disminuido séptima"} },
+        "Si": { Im: {raiz: "Si", tipo: "menor"}, IIo: {raiz: "Do#/Reb", tipo: "semidisminuido"}, III: {raiz: "Re", tipo: "aumentado"}, IVm: {raiz: "Mi", tipo: "menor"}, V7: {raiz: "Fa#/Solb", tipo: "séptima"}, VI: {raiz: "Sol", tipo: "Mayor"}, VIIo7: {raiz: "La#/Sib", tipo: "disminuido séptima"} }
+    };
+    const escalasMenorMelodica = {
+        "Do": { Im: {raiz: "Do", tipo: "menor"}, IIm: {raiz: "Re", tipo: "menor"}, III: {raiz: "Re#/Mib", tipo: "aumentado"}, IV: {raiz: "Fa", tipo: "Mayor"}, V: {raiz: "Sol", tipo: "Mayor"}, VIo: {raiz: "La", tipo: "semidisminuido"}, VIIø: {raiz: "Si", tipo: "semidisminuido"} },
+        "Do#/Reb": { Im: {raiz: "Do#/Reb", tipo: "menor"}, IIm: {raiz: "Re#/Mib", tipo: "menor"}, III: {raiz: "Mi", tipo: "aumentado"}, IV: {raiz: "Fa#/Solb", tipo: "Mayor"}, V: {raiz: "Sol#/Lab", tipo: "Mayor"}, VIo: {raiz: "La#/Sib", tipo: "semidisminuido"}, VIIø: {raiz: "Do", tipo: "semidisminuido"} },
+        "Re": { Im: {raiz: "Re", tipo: "menor"}, IIm: {raiz: "Mi", tipo: "menor"}, III: {raiz: "Fa", tipo: "aumentado"}, IV: {raiz: "Sol", tipo: "Mayor"}, V: {raiz: "La", tipo: "Mayor"}, VIo: {raiz: "Si", tipo: "semidisminuido"}, VIIø: {raiz: "Do#/Reb", tipo: "semidisminuido"} },
+        "Re#/Mib": { Im: {raiz: "Re#/Mib", tipo: "menor"}, IIm: {raiz: "Fa", tipo: "menor"}, III: {raiz: "Fa#/Solb", tipo: "aumentado"}, IV: {raiz: "Sol#/Lab", tipo: "Mayor"}, V: {raiz: "La#/Sib", tipo: "Mayor"}, VIo: {raiz: "Do", tipo: "semidisminuido"}, VIIø: {raiz: "Re", tipo: "semidisminuido"} },
+        "Mi": { Im: {raiz: "Mi", tipo: "menor"}, IIm: {raiz: "Fa#/Solb", tipo: "menor"}, III: {raiz: "Sol", tipo: "aumentado"}, IV: {raiz: "La", tipo: "Mayor"}, V: {raiz: "Si", tipo: "Mayor"}, VIo: {raiz: "Do#/Reb", tipo: "semidisminuido"}, VIIø: {raiz: "Re#/Mib", tipo: "semidisminuido"} },
+        "Fa": { Im: {raiz: "Fa", tipo: "menor"}, IIm: {raiz: "Sol", tipo: "menor"}, III: {raiz: "Sol#/Lab", tipo: "aumentado"}, IV: {raiz: "La#/Sib", tipo: "Mayor"}, V: {raiz: "Do", tipo: "Mayor"}, VIo: {raiz: "Re", tipo: "semidisminuido"}, VIIø: {raiz: "Mi", tipo: "semidisminuido"} },
+        "Fa#/Solb": { Im: {raiz: "Fa#/Solb", tipo: "menor"}, IIm: {raiz: "Sol#/Lab", tipo: "menor"}, III: {raiz: "La", tipo: "aumentado"}, IV: {raiz: "Si", tipo: "Mayor"}, V: {raiz: "Do#/Reb", tipo: "Mayor"}, VIo: {raiz: "Re#/Mib", tipo: "semidisminuido"}, VIIø: {raiz: "Fa", tipo: "semidisminuido"} },
+        "Sol": { Im: {raiz: "Sol", tipo: "menor"}, IIm: {raiz: "La", tipo: "menor"}, III: {raiz: "La#/Sib", tipo: "aumentado"}, IV: {raiz: "Do", tipo: "Mayor"}, V: {raiz: "Re", tipo: "Mayor"}, VIo: {raiz: "Mi", tipo: "semidisminuido"}, VIIø: {raiz: "Fa#/Solb", tipo: "semidisminuido"} },
+        "Sol#/Lab": { Im: {raiz: "Sol#/Lab", tipo: "menor"}, IIm: {raiz: "La#/Sib", tipo: "menor"}, III: {raiz: "Si", tipo: "aumentado"}, IV: {raiz: "Do#/Reb", tipo: "Mayor"}, V: {raiz: "Re#/Mib", tipo: "Mayor"}, VIo: {raiz: "Fa", tipo: "semidisminuido"}, VIIø: {raiz: "Sol", tipo: "semidisminuido"} },
+        "La": { Im: {raiz: "La", tipo: "menor"}, IIm: {raiz: "Si", tipo: "menor"}, III: {raiz: "Do", tipo: "aumentado"}, IV: {raiz: "Re", tipo: "Mayor"}, V: {raiz: "Mi", tipo: "Mayor"}, VIo: {raiz: "Fa#/Solb", tipo: "semidisminuido"}, VIIø: {raiz: "Sol#/Lab", tipo: "semidisminuido"} },
+        "La#/Sib": { Im: {raiz: "La#/Sib", tipo: "menor"}, IIm: {raiz: "Do", tipo: "menor"}, III: {raiz: "Do#/Reb", tipo: "aumentado"}, IV: {raiz: "Re#/Mib", tipo: "Mayor"}, V: {raiz: "Fa", tipo: "Mayor"}, VIo: {raiz: "Sol", tipo: "semidisminuido"}, VIIø: {raiz: "La", tipo: "semidisminuido"} },
+        "Si": { Im: {raiz: "Si", tipo: "menor"}, IIm: {raiz: "Do#/Reb", tipo: "menor"}, III: {raiz: "Re", tipo: "aumentado"}, IV: {raiz: "Mi", tipo: "Mayor"}, V: {raiz: "Fa#/Solb", tipo: "Mayor"}, VIo: {raiz: "Sol#/Lab", tipo: "semidisminuido"}, VIIø: {raiz: "La#/Sib", tipo: "semidisminuido"} }
+    };
+
+    // ============================================================
+    // UTILIDADES MUSICALES
+    // ============================================================
+    function formatearGrado(g) {
+        if (!g) return g;
+        g = g.replace(/i/g, 'I').replace(/v/g, 'V');
+        if (g.endsWith('o') && !g.endsWith('o7')) return g.slice(0, -1) + 'ø';
+        return g;
+    }
+    function formatearCifrado(c, tipo) {
+        if (tipo === 'disminuido séptima') return c.replace(/o/g, '<span class="dim-o">o</span>');
+        return c;
+    }
+    function quintaJusta(n) {
+        const m = {"Do":"Sol","Do#/Reb":"Sol#/Lab","Re":"La","Re#/Mib":"La#/Sib","Mi":"Si","Fa":"Do","Fa#/Solb":"Do#/Reb","Sol":"Re","Sol#/Lab":"Re#/Mib","La":"Mi","La#/Sib":"Fa","Si":"Fa#/Solb"};
+        return m[n] || null;
+    }
+    function acordeFueraDeEscala(g, t) {
+        const e = escalasMayores[t];
+        if (!e) return null;
+        if (g === 'I7')  return { raiz: e.I.raiz, tipo: 'séptima' };
+        if (g === 'VI7') return { raiz: e.VIm.raiz, tipo: 'séptima' };
+        if (g === 'IVm') return { raiz: e.IV.raiz, tipo: 'menor' };
+        return null;
+    }
+    function acordeFueraDeEscalaMenor(g, t) {
+        const e = escalasMenores[t];
+        if (!e) return null;
+        if (g === 'I7')   return { raiz: e.Im.raiz, tipo: 'séptima' };
+        if (g === 'V7')   return { raiz: quintaJusta(e.Im.raiz), tipo: 'séptima' };
+        if (g === 'VIb7') return { raiz: e.VIb.raiz, tipo: 'séptima' };
+        if (g === 'VI7')  return { raiz: e.VIb.raiz, tipo: 'séptima' };
+        return null;
+    }
+    function obtenerGrado(nota, ton) {
+        const e = escalasMayores[ton];
+        if (!e) return null;
+        for (const k in e) {
+            if (e[k].raiz === nota) return k.replace(/[^IViv]/g, '').toUpperCase() || k;
+        }
+        return null;
+    }
+
+    // ============================================================
+    // ACORDES (con traslación por afinación)
+    // ============================================================
+    function getChordsFromDOM() {
+        const all = [];
+        document.querySelectorAll('#chord-data-matrix > div').forEach(div => {
+            const tipo = div.getAttribute('data-tipo');
+            all.push({
+                raiz: div.getAttribute('data-raiz'),
+                tipo: tipo,
+                cifrado: formatearCifrado(div.getAttribute('data-cifrado'), tipo),
+                trastes: JSON.parse(div.getAttribute('data-trastes')),
+                dedos: JSON.parse(div.getAttribute('data-dedos')),
+                barra: div.hasAttribute('data-barra') ? JSON.parse(div.getAttribute('data-barra')) : null
+            });
+        });
+        if (currentTuning === 'reentrante') return all;
+        return all.map(c => {
+            const shifted = SEMITONE_ROOTS[(ROOT_SEMITONES[c.raiz] + 4) % 12];
+            const src = all.find(x => x.raiz === shifted && x.tipo === c.tipo);
+            if (!src) return c;
+            return Object.assign({}, c, {
+                trastes: src.trastes.slice(),
+                dedos: src.dedos.slice(),
+                barra: src.barra ? JSON.parse(JSON.stringify(src.barra)) : null
+            });
+        });
+    }
+
+    // ============================================================
+    // VISTAS
+    // ============================================================
+    function showHome() {
+        $('homeView').classList.remove('view-hidden');
+        $('resultsView').classList.add('view-hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        updateHomeActionBar();
+    }
+    function showResults() {
+        $('homeView').classList.add('view-hidden');
+        $('resultsView').classList.remove('view-hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ============================================================
+    // VALIDACIÓN
+    // ============================================================
+    function checkRequirements() {
+        const rV = getValue('raizSelect');
+        const pmV = getValue('progMayorSelect');
+        const pmnV = getValue('progMenorSelect');
+        const poV = getValue('progOtrasSelect');
+        const atV = getValue('acordesTonalidadSelect');
+        const adV = getValue('acordesDomSecSelect');
+        const faltantes = [];
+        const hayProg = (pmV !== 'todos' || pmnV !== 'todos' || poV !== 'todos');
+        const necesitaNota = hayProg || atV !== 'todos' || adV !== 'todos';
+        if (necesitaNota && rV === 'todos') faltantes.push('Nota');
+        return { valid: faltantes.length === 0, faltantes };
+    }
+    function updateHomeActionBar() {
+        const { valid, faltantes } = checkRequirements();
+        const btn = $('btnVerAcordes');
+        const hint = $('hintFalta');
+        const hintTxt = $('hintFaltaTexto');
+        const raizTrigger = $('raizTrigger');
+        raizTrigger.classList.remove('requerido-falta');
+        if (faltantes.includes('Nota')) raizTrigger.classList.add('requerido-falta');
+        if (valid) {
+            hint.classList.remove('visible');
+            btn.classList.remove('disabled');
+            btn.removeAttribute('aria-disabled');
+        } else {
+            hintTxt.innerHTML = 'Falta seleccionar: ' + faltantes.map(f => '<b>' + f + '</b>').join(' y ');
+            hint.classList.add('visible');
+            btn.classList.add('disabled');
+            btn.setAttribute('aria-disabled', 'true');
+        }
+    }
+    function verAcordes() {
+        const { valid } = checkRequirements();
+        if (!valid) {
+            document.querySelector('.home-action-bar').animate(
+                [{transform:'translateX(0)'},{transform:'translateX(-6px)'},{transform:'translateX(6px)'},{transform:'translateX(-4px)'},{transform:'translateX(4px)'},{transform:'translateX(0)'}],
+                {duration: 320, easing: 'ease-in-out'}
+            );
+            return;
+        }
+        renderChords();
+        showResults();
+    }
+    function intentarNavegar() {
+        saveFiltersToLocalStorage();
+        updateHashFromFilters();
+        updateHomeActionBar();
+        const { valid } = checkRequirements();
+        if (valid) {
+            renderChords();
+            showResults();
+        }
+    }
+
+    // ============================================================
+    // TEMA
+    // ============================================================
+    function getSystemTheme() {
+        return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    }
+    function updateThemeToggleIcon() {
+        const btn = $('themeToggle');
+        if (!btn) return;
+        const isDark = document.documentElement.dataset.theme === 'dark';
+        btn.textContent = isDark ? '☀️' : '🌙';
+    }
+    function toggleTheme() {
+        const current = document.documentElement.dataset.theme || getSystemTheme();
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        try { localStorage.setItem('cuatro-theme', next); } catch (e) {}
+        updateThemeToggleIcon();
+    }
+
+    // ============================================================
+    // PERSISTENCIA
+    // ============================================================
+    const FILTER_KEYS = [
+        ['afin', 'afinacionSelect'],
+        ['raiz', 'raizSelect'],
+        ['tipo', 'tipoSelect'],
+        ['at',   'acordesTonalidadSelect'],
+        ['ad',   'acordesDomSecSelect'],
+        ['pm',   'progMayorSelect'],
+        ['pmn',  'progMenorSelect'],
+        ['po',   'progOtrasSelect']
+    ];
+    function saveFiltersToLocalStorage() {
+        try {
+            const state = {};
+            FILTER_KEYS.forEach(([k, id]) => { state[k] = getValue(id); });
+            localStorage.setItem('cuatro-filters', JSON.stringify(state));
+        } catch (e) {}
+    }
+    function loadFiltersFromLocalStorage() {
+        try {
+            const raw = localStorage.getItem('cuatro-filters');
+            return raw ? JSON.parse(raw) : null;
+        } catch (e) { return null; }
+    }
+
+    // ============================================================
+    // FIX PRINCIPAL: try/catch en replaceState
+    // En entornos sandbox (blob:, file:, iframe sin same-origin) el
+    // navegador lanza SecurityError. Lo silenciamos para no romper
+    // el flujo de la app (navegación, render, etc.).
+    // ============================================================
+    function updateHashFromFilters() {
+        const parts = [];
+        FILTER_KEYS.forEach(([k, id]) => {
+            const v = getValue(id);
+            if (v && v !== 'todos' && v !== 'reentrante') {
+                parts.push(k + '=' + encodeURIComponent(v));
+            }
+        });
+        const newHash = parts.length ? '#' + parts.join('&') : '';
+        if (location.hash === newHash) return;
+        try {
+            history.replaceState(null, '', location.pathname + location.search + newHash);
+        } catch (e) {
+            // Silencioso a propósito: entornos sandbox sin permiso de History.
+        }
+    }
+
+    function readHash() {
+        if (!location.hash || location.hash.length < 2) return null;
+        const result = {};
+        location.hash.substring(1).split('&').forEach(p => {
+            const i = p.indexOf('=');
+            if (i < 0) return;
+            result[p.substring(0, i)] = decodeURIComponent(p.substring(i + 1));
+        });
+        return Object.keys(result).length ? result : null;
+    }
+    function applyCustomSelectValue(triggerId, hiddenInputId, value) {
+        const trigger = $(triggerId);
+        const hidden = $(hiddenInputId);
+        if (!trigger || !hidden) return;
+        hidden.value = value;
+        const wrapper = trigger.closest('.custom-select-wrapper');
+        if (!wrapper) return;
+        const options = wrapper.querySelectorAll('.custom-option');
+        for (const opt of options) {
+            if (opt.getAttribute('data-value') === value) {
+                trigger.innerHTML = opt.innerHTML;
+                if (value === 'todos' || value === 'reentrante') trigger.classList.remove('selected');
+                else trigger.classList.add('selected');
+                return;
+            }
+        }
+    }
+    function restoreFilters() {
+        const source = readHash() || loadFiltersFromLocalStorage();
+        if (!source) return;
+        FILTER_KEYS.forEach(([k, id]) => {
+            const v = source[k];
+            if (v === undefined) return;
+            applyCustomSelectValue(id.replace('Select', 'Trigger'), id, v);
+        });
+        const afV = getValue('afinacionSelect');
+        if (afV && TUNINGS[afV]) currentTuning = afV;
+    }
+
+    // ============================================================
+    // AUDIO
+    // ============================================================
+    let audioCtx = null, gananciaGlobal = 0.8, convolverNode = null;
+    let fuentesActivas = [];
+    let audioTimeoutIds = [];
+    let reproduciendo = false;
+    let audioStopTimer = null;
+    let bucleActivo = false;
+    let fsTrastesList = [];
+    const PAUSA_ENTRE_LOOPS_MS = 900;
+
+    function getAudioContext() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        return audioCtx;
+    }
+    function createBodyImpulse(ctx) {
+        const sr = ctx.sampleRate;
+        const len = Math.floor(sr * 0.55);
+        const buf = ctx.createBuffer(2, len, sr);
+        const taps = [0.008, 0.019, 0.031, 0.048, 0.067, 0.088];
+        const gains = [0.62, 0.48, 0.38, 0.30, 0.24, 0.18];
+        for (let ch = 0; ch < 2; ch++) {
+            const d = buf.getChannelData(ch);
+            for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3) * 0.32;
+            taps.forEach((t, idx) => {
+                const s = Math.floor(t * sr);
+                if (s < len) d[s] += gains[idx] * (ch === 0 ? 1 : 0.92);
+            });
+        }
+        return buf;
+    }
+    function getConvolver(ctx) {
+        if (!convolverNode) {
+            convolverNode = ctx.createConvolver();
+            convolverNode.buffer = createBodyImpulse(ctx);
+        }
+        return convolverNode;
+    }
+    function playChord(trastes) {
+        if (!trastes || trastes.length !== 4) return;
+        const ctx = getAudioContext();
+        if (ctx.state === 'suspended') ctx.resume();
+        const volSlider = $('volumenControlFS');
+        gananciaGlobal = volSlider ? volSlider.value / 100 : 0.8;
+        const velSlider = $('velocidadControlFS');
+        const valorVel = velSlider ? parseFloat(velSlider.value) : 58;
+        const baseDelayMs = 240 * (1 - valorVel / 100);
+        const conv = getConvolver(ctx);
+        getTuning().freqs.forEach((fBase, i) => {
+            const jitter = (Math.random() - 0.5) * 0.030;
+            const t0 = ctx.currentTime + i * (baseDelayMs / 1000) + jitter;
+            const freq = fBase * Math.pow(2, trastes[i] / 12);
+            const sr = ctx.sampleRate;
+            const period = Math.round(sr / freq);
+            const bufSize = Math.floor(sr * 2.5);
+            const buf = ctx.createBuffer(1, bufSize, sr);
+            const data = buf.getChannelData(0);
+            const noiseLen = Math.min(period, 300);
+            for (let n = 0; n < noiseLen; n++) data[n] = (Math.random() * 2 - 1) * 0.7;
+            const feedback = 0.998;
+            for (let n = noiseLen; n < bufSize; n++) {
+                data[n] = (n >= period) ? (data[n - period] + data[n - period + 1]) * 0.5 * feedback : data[n - period] * feedback;
+            }
+            const src = ctx.createBufferSource();
+            src.buffer = buf;
+            src.onended = () => {
+                const idx = fuentesActivas.indexOf(src);
+                if (idx > -1) fuentesActivas.splice(idx, 1);
+            };
+            fuentesActivas.push(src);
+            if (src.detune && freq > 400) {
+                const lfo = ctx.createOscillator();
+                lfo.type = 'sine';
+                lfo.frequency.value = 4.4 + Math.random() * 1.6;
+                const lfoG = ctx.createGain();
+                lfoG.gain.setValueAtTime(0, t0);
+                lfoG.gain.linearRampToValueAtTime(5 + Math.min((freq - 400) / 30, 10), t0 + 0.35);
+                lfo.connect(lfoG);
+                lfoG.connect(src.detune);
+                lfo.start(t0 + 0.1);
+                lfo.stop(t0 + 2.4);
+            }
+            const gain = ctx.createGain();
+            const vol = gananciaGlobal * 0.7;
+            gain.gain.setValueAtTime(0, t0);
+            gain.gain.linearRampToValueAtTime(vol, t0 + 0.01);
+            gain.gain.setValueAtTime(vol, t0 + 1.2);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.2);
+            const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 3200; lp.Q.value = 0.7;
+            const mid = ctx.createBiquadFilter(); mid.type = 'peaking'; mid.frequency.value = 900; mid.Q.value = 1.2; mid.gain.value = -3.5;
+            const bass = ctx.createBiquadFilter(); bass.type = 'lowshelf'; bass.frequency.value = 250; bass.gain.value = 4;
+            const treb = ctx.createBiquadFilter(); treb.type = 'highshelf'; treb.frequency.value = 2200; treb.gain.value = 3;
+            const dry = ctx.createGain(); dry.gain.value = 0.82;
+            const wet = ctx.createGain(); wet.gain.value = 0.30;
+            src.connect(gain);
+            gain.connect(lp);
+            lp.connect(mid);
+            mid.connect(bass);
+            bass.connect(treb);
+            treb.connect(dry);
+            dry.connect(ctx.destination);
+            treb.connect(conv);
+            conv.connect(wet);
+            wet.connect(ctx.destination);
+            src.start(t0);
+            src.stop(t0 + 2.5);
+        });
+    }
+
+    // ============================================================
+    // REPRODUCCIÓN Y BUCLE
+    // ============================================================
+    function abrirFullscreen(html, trastesList, mode) {
+        const content = $('fullscreenContent');
+        content.innerHTML = html;
+        content.className = 'fs-content fs-mode-' + (mode || 'single');
+        fsTrastesList = trastesList || [];
+        $('fullscreenOverlay').classList.add('open');
+        document.body.style.overflow = 'hidden';
+        document.body.classList.add('fs-open');
+        actualizarBotonTocar();
+        actualizarBotonBucle();
+    }
+    function cerrarFullscreen() {
+        detenerAudio();
+        $('fullscreenOverlay').classList.remove('open');
+        document.body.style.overflow = '';
+        document.body.classList.remove('fs-open');
+        fsTrastesList = [];
+    }
+    function actualizarBotonTocar() {
+        const btn = $('btnTocarFS');
+        if (!btn) return;
+        if (reproduciendo) { btn.textContent = '⏹ Parar'; btn.classList.add('playing'); }
+        else { btn.textContent = '▶ Tocar'; btn.classList.remove('playing'); }
+    }
+    function actualizarBotonBucle() {
+        const btn = $('btnBucleFS');
+        if (!btn) return;
+        if (bucleActivo) { btn.textContent = '🔁 Bucle: ON'; btn.classList.add('active'); }
+        else { btn.textContent = '🔁 Bucle'; btn.classList.remove('active'); }
+    }
+    function toggleBucle() {
+        bucleActivo = !bucleActivo;
+        actualizarBotonBucle();
+        try { localStorage.setItem('cuatro-bucle', bucleActivo ? '1' : '0'); } catch (e) {}
+    }
+    function limpiarTimersYFuentes() {
+        audioTimeoutIds.forEach(id => clearTimeout(id));
+        audioTimeoutIds = [];
+        if (audioStopTimer) { clearTimeout(audioStopTimer); audioStopTimer = null; }
+        fuentesActivas.forEach(src => { try { src.stop(); } catch (e) {} });
+        fuentesActivas = [];
+    }
+    function tocarSecuencia(trastesList, intervaloMs, permitirBucle) {
+        if (!trastesList || trastesList.length === 0) return;
+        intervaloMs = intervaloMs || 2000;
+        limpiarTimersYFuentes();
+        reproduciendo = true;
+        actualizarBotonTocar();
+        trastesList.forEach((trastes, i) => {
+            const id = setTimeout(() => playChord(trastes), i * intervaloMs);
+            audioTimeoutIds.push(id);
+        });
+        const durMs = trastesList.length * intervaloMs + 2600;
+        audioStopTimer = setTimeout(() => {
+            audioStopTimer = null;
+            if (permitirBucle && bucleActivo) {
+                audioStopTimer = setTimeout(() => {
+                    audioStopTimer = null;
+                    if (permitirBucle && bucleActivo) tocarSecuencia(trastesList, intervaloMs, permitirBucle);
+                    else { reproduciendo = false; actualizarBotonTocar(); }
+                }, PAUSA_ENTRE_LOOPS_MS);
+            } else {
+                reproduciendo = false;
+                actualizarBotonTocar();
+            }
+        }, durMs);
+    }
+    function toggleTocarFullscreen() {
+        if (reproduciendo) { detenerAudio(); return; }
+        if (fsTrastesList.length === 0) return;
+        tocarSecuencia(fsTrastesList, 2000, true);
+    }
+    function detenerAudio() {
+        limpiarTimersYFuentes();
+        reproduciendo = false;
+        actualizarBotonTocar();
+    }
+    document.addEventListener('keydown', (e) => {
+        const overlay = $('fullscreenOverlay');
+        if (!overlay || !overlay.classList.contains('open')) return;
+        const tag = (e.target && e.target.tagName || '').toLowerCase();
+        const inter = (tag === 'input' || tag === 'button' || tag === 'textarea' || tag === 'select');
+        if ((e.key === ' ' || e.code === 'Space') && !inter) { e.preventDefault(); toggleTocarFullscreen(); }
+        else if (e.key === 'Escape') { e.preventDefault(); cerrarFullscreen(); }
+        else if ((e.key === 'l' || e.key === 'L') && !inter) { e.preventDefault(); toggleBucle(); }
+    });
+
+    // ============================================================
+    // SVG
+    // ============================================================
+    function generarSVG(c, small, fullscreen, conNotas) {
+        small = !!small; fullscreen = !!fullscreen; conNotas = !!conNotas;
+        const nFrets = 6;
+        const x0 = small ? 46 : 52, dx = small ? 24 : 32;
+        const yTop = small ? 28 : 36, step = small ? 25 : 32;
+        const xC = [0,1,2,3].map(i => x0 + i * dx);
+        const xDer = xC[3];
+        const yBot = yTop + nFrets * step;
+        const W = xDer + x0;
+        const k = small ? 0.78 : 1;
+        const rDot = 11*k, rOpen = 7.5*k;
+        const fsDedo = Math.round(14*k), fsBarra = Math.round(13*k), fsTraste = Math.round(11*k);
+        const grosor = [2.3,1.7,1.15,1.6].map(v => +(v*k).toFixed(2));
+        const yOpen = yTop - 16*k;
+        const ySep = yBot + 14, yLbl1 = yBot + 32, yLbl2 = yBot + 58;
+        const H = conNotas ? (yLbl2 + 16) : (yBot + 12);
+        const cls = small ? 'diagram-svg diagram-svg-small' : fullscreen ? 'diagram-svg diagram-svg-fs' : 'diagram-svg';
+        let s = `<svg viewBox="0 0 ${W} ${H}" class="${cls}" preserveAspectRatio="xMidYMid meet">`;
+        s += `<line class="dg-nut" x1="${xC[0]}" y1="${yTop}" x2="${xDer}" y2="${yTop}" stroke-width="${(3.4*k).toFixed(2)}" stroke-linecap="round"/>`;
+        for (let i = 1; i <= nFrets; i++) {
+            const y = yTop + i * step;
+            s += `<line class="dg-fret" x1="${xC[0]}" y1="${y}" x2="${xDer}" y2="${y}" stroke-width="${(1.2*k).toFixed(2)}"/>`;
+        }
+        for (let i = 1; i <= nFrets; i++) {
+            const y = yTop + (i - 0.5) * step;
+            s += `<text class="dg-fretnum" x="${(xC[0] - 10*k).toFixed(2)}" y="${y}" font-size="${fsTraste}" text-anchor="end" dominant-baseline="central">${i}</text>`;
+        }
+        for (let i = 0; i < 4; i++) {
+            s += `<line class="dg-string" x1="${xC[i]}" y1="${yTop}" x2="${xC[i]}" y2="${yBot}" stroke-width="${grosor[i]}" stroke-linecap="round"/>`;
+        }
+        for (let i = 0; i < 4; i++) {
+            if (c.trastes[i] === 0) {
+                s += `<circle class="dg-open" cx="${xC[i]}" cy="${yOpen.toFixed(2)}" r="${rOpen.toFixed(2)}" stroke-width="${(1.9*k).toFixed(2)}"/>`;
+            }
+        }
+        if (c.barra) {
+            const yB = yTop + c.barra.traste * step - step / 2;
+            const idx = c.barra.cuerdas.map(n => 4 - n);
+            const xi = xC[Math.min(...idx)], xf = xC[Math.max(...idx)];
+            const pad = 9*k, h = 21*k;
+            s += `<rect class="dg-barra" x="${(xi-pad).toFixed(2)}" y="${(yB-h/2).toFixed(2)}" width="${(xf-xi+2*pad).toFixed(2)}" height="${h.toFixed(2)}" rx="${(h/2).toFixed(2)}" ry="${(h/2).toFixed(2)}"/>`;
+            s += `<text class="dg-barra-txt" x="${((xi+xf)/2).toFixed(2)}" y="${yB}" font-size="${fsBarra}" font-weight="700" text-anchor="middle" dominant-baseline="central">${c.barra.dedo}</text>`;
+        }
+        for (let i = 0; i < 4; i++) {
+            const t = c.trastes[i];
+            const enBarra = c.barra && c.barra.traste === t && c.barra.cuerdas.includes(4 - i);
+            if (t > 0 && !enBarra) {
+                const y = yTop + t * step - step / 2;
+                s += `<circle class="dg-dot" cx="${xC[i]}" cy="${y}" r="${rDot.toFixed(2)}"/>`;
+                s += `<text class="dg-dot-txt" x="${xC[i]}" y="${y}" font-size="${fsDedo}" font-weight="700" text-anchor="middle" dominant-baseline="central">${c.dedos[i]}</text>`;
+            }
+        }
+        if (conNotas) {
+            const noteNames = ['Do','Do#','Re','Re#','Mi','Fa','Fa#','Sol','Sol#','La','La#','Si'];
+            const degLabels = ['1','9b','9','3b','3','4','5b','5','5#','6','7b','7'];
+            const rootSem = ROOT_SEMITONES[c.raiz] || 0;
+            const openN = getTuning().openNotes;
+            s += `<line class="dg-sep" x1="${xC[0]-14}" y1="${ySep}" x2="${xDer+14}" y2="${ySep}" stroke-width="1"/>`;
+            for (let i = 0; i < 4; i++) {
+                const sem = (((openN[i] + c.trastes[i]) % 12) + 12) % 12;
+                const interval = (sem - rootSem + 12) % 12;
+                const isRoot = interval === 0;
+                s += `<text class="${isRoot ? 'dg-deg-root' : 'dg-deg'}" x="${xC[i]}" y="${yLbl1}" font-size="14" font-weight="${isRoot ? 700 : 600}" text-anchor="middle" dominant-baseline="central">${degLabels[interval]}</text>`;
+                s += `<text class="${isRoot ? 'dg-note-root' : 'dg-note'}" x="${xC[i]}" y="${yLbl2}" font-size="14" font-weight="${isRoot ? 700 : 500}" text-anchor="middle" dominant-baseline="central">${noteNames[sem]}</text>`;
+            }
+        }
+        s += `</svg>`;
+        return s;
+    }
+
+    // ============================================================
+    // RENDERIZADO
+    // ============================================================
+    function updateResultsSummary() {
+        const rV = getValue('raizSelect'), tV = getValue('tipoSelect');
+        const pmV = getValue('progMayorSelect'), pmnV = getValue('progMenorSelect'), poV = getValue('progOtrasSelect');
+        const atV = getValue('acordesTonalidadSelect'), adV = getValue('acordesDomSecSelect');
+        const partes = ['Afinación <b>' + (currentTuning === 'reentrante' ? 'Reentrante' : 'Ascendente') + '</b>'];
+        if (rV !== 'todos') partes.push('nota <b>' + rV + '</b>');
+        if (tV !== 'todos') partes.push('tipo <b>' + tV + '</b>');
+        const modoMap = { mayor: 'Mayor', menor_natural: 'Menor natural', menor_armonica: 'Menor armónica', menor_melodica: 'Menor melódica' };
+        if (atV !== 'todos') partes.push('tonalidad <b>' + (modoMap[atV] || atV) + '</b>');
+        if (adV !== 'todos') partes.push('dominantes <b>' + (modoMap[adV] || adV) + '</b>');
+        if (pmV !== 'todos' && progresionesMayores[pmV]) partes.push('<b>' + progresionesMayores[pmV].labelBold + '</b>');
+        if (pmnV !== 'todos' && progresionesMenores[pmnV]) partes.push('<b>' + progresionesMenores[pmnV].labelBold + '</b>');
+        if (poV !== 'todos' && progresionesOtras[poV]) partes.push('<b>' + progresionesOtras[poV].labelBold + '</b>');
+        $('resultsSummary').innerHTML = 'Mostrando: ' + partes.join('<span class="sep">·</span>');
+    }
+
+    function renderChords() {
+        const cont = $('container');
+        const rV = getValue('raizSelect'), tV = getValue('tipoSelect');
+        const pmV = getValue('progMayorSelect'), pmnV = getValue('progMenorSelect'), poV = getValue('progOtrasSelect');
+        const atV = getValue('acordesTonalidadSelect'), adV = getValue('acordesDomSecSelect');
+        const chords = getChordsFromDOM();
+        const esProg = (pmV !== 'todos' || pmnV !== 'todos' || poV !== 'todos');
+        cont.className = 'grid ' + (adV !== 'todos' ? 'grid-3col' : 'grid-auto');
+        let filtConGrados = [];
+        const mostrarAviso = (m) => { cont.innerHTML = '<div class="aviso-rojo">' + m + '</div>'; };
+
+        if (pmV !== 'todos') {
+            if (rV === 'todos') return mostrarAviso('Seleccione una tonalidad (nota raíz) para ver la progresión mayor.');
+            const prog = progresionesMayores[pmV], esc = escalasMayores[rV];
+            if (prog && esc) {
+                filtConGrados = prog.grados.map(g => {
+                    let item = esc[g]; if (!item) item = acordeFueraDeEscala(g, rV);
+                    if (!item) return null;
+                    const ac = chords.find(c => c.raiz === item.raiz && c.tipo === item.tipo);
+                    return ac ? { acorde: ac, grado: formatearGrado(g) } : null;
+                }).filter(Boolean);
+            }
+        } else if (pmnV !== 'todos') {
+            if (rV === 'todos') return mostrarAviso('Seleccione una tonalidad (nota raíz) para ver la progresión menor.');
+            const prog = progresionesMenores[pmnV];
+            if (prog && prog.noAplica) return mostrarAviso('Esta progresión no aplica.');
+            const esc = escalasMenores[rV];
+            if (prog && esc) {
+                filtConGrados = prog.grados.map(g => {
+                    let item = esc[g]; if (!item) item = acordeFueraDeEscalaMenor(g, rV);
+                    if (!item) return null;
+                    const ac = chords.find(c => c.raiz === item.raiz && c.tipo === item.tipo);
+                    return ac ? { acorde: ac, grado: formatearGrado(g) } : null;
+                }).filter(Boolean);
+            }
+        } else if (poV !== 'todos') {
+            if (rV === 'todos') return mostrarAviso('Seleccione una tonalidad (nota raíz) para ver la progresión.');
+            const prog = progresionesOtras[poV], esc = escalasMayores[rV];
+            if (prog && esc) {
+                filtConGrados = prog.grados.map(g => {
+                    const item = esc[g]; if (!item) return null;
+                    const ac = chords.find(c => c.raiz === item.raiz && c.tipo === item.tipo);
+                    return ac ? { acorde: ac, grado: formatearGrado(g) } : null;
+                }).filter(Boolean);
+            }
+        } else if (atV !== 'todos') {
+            if (rV === 'todos') return mostrarAviso('Seleccione una tonalidad (nota raíz) para ver los acordes por tonalidad.');
+            let esc = null;
+            if (atV === 'mayor') esc = escalasMayores[rV];
+            else if (atV === 'menor_natural') esc = escalasMenores[rV];
+            else if (atV === 'menor_armonica') esc = escalasMenorArmonica[rV];
+            else if (atV === 'menor_melodica') esc = escalasMenorMelodica[rV];
+            if (esc) {
+                const permitidos = ['I','IIm','IIIm','IV','V','VIm','VIIo'];
+                filtConGrados = Object.entries(esc)
+                    .filter(([g]) => atV !== 'mayor' || permitidos.includes(g))
+                    .map(([g, item]) => {
+                        const ac = chords.find(c => c.raiz === item.raiz && c.tipo === item.tipo);
+                        if (!ac) return null;
+                        let et = formatearGrado(g);
+                        if (item.tipo === 'aumentado') et += 'aug';
+                        return { acorde: ac, grado: et };
+                    }).filter(Boolean);
+            }
+        } else if (adV !== 'todos') {
+            if (rV === 'todos') return mostrarAviso('Seleccione una tonalidad (nota raíz) para ver las dominantes secundarias.');
+            let esc = null;
+            if (adV === 'mayor') esc = escalasMayores[rV];
+            else if (adV === 'menor_natural') esc = escalasMenores[rV];
+            else if (adV === 'menor_armonica') esc = escalasMenorArmonica[rV];
+            else if (adV === 'menor_melodica') esc = escalasMenorMelodica[rV];
+            if (esc) {
+                for (const [g, item] of Object.entries(esc)) {
+                    const tipo = item.tipo;
+                    if (tipo === 'semidisminuido' || tipo === 'disminuido séptima') {
+                        const ac = chords.find(c => c.raiz === item.raiz && c.tipo === item.tipo);
+                        if (ac) filtConGrados.push({ tipo: 'semidisminuido', acorde: ac, grado: formatearGrado(g) });
+                    } else if (tipo === 'aumentado') {
+                        const ac = chords.find(c => c.raiz === item.raiz && c.tipo === item.tipo);
+                        if (ac) filtConGrados.push({ tipo: 'aumentado', acorde: ac, grado: formatearGrado(g) + 'aug' });
+                    } else if (tipo === 'Mayor' || tipo === 'menor') {
+                        const rd = item.raiz, rDom = quintaJusta(rd);
+                        if (rDom) {
+                            const acDom = chords.find(c => c.raiz === rDom && c.tipo === 'séptima');
+                            const acTon = chords.find(c => c.raiz === rd && c.tipo === tipo);
+                            if (acDom && acTon) {
+                                const gDom = obtenerGrado(rDom, rV);
+                                filtConGrados.push({
+                                    tipo: 'par', dominante: acDom, tonica: acTon,
+                                    gradoDom: gDom ? gDom + '7' : '?7',
+                                    gradoTonica: formatearGrado(g)
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        } else {
+            const chordsOrd = [...chords].sort((a, b) => {
+                const rA = ordenRaices.indexOf(a.raiz), rB = ordenRaices.indexOf(b.raiz);
+                if (rA !== rB) return rA - rB;
+                return ordenTipos.indexOf(a.tipo) - ordenTipos.indexOf(b.tipo);
+            });
+            filtConGrados = chordsOrd
+                .filter(c => (rV === 'todos' || c.raiz === rV) && (tV === 'todos' || c.tipo === tV))
+                .map(c => ({ acorde: c, grado: null }));
+        }
+
+        cont.innerHTML = '';
+        if (filtConGrados.length === 0) {
+            cont.innerHTML = '<div class="aviso-rojo">No se encontraron acordes para esta selección.</div>';
+        } else if (adV !== 'todos') {
+            filtConGrados.forEach(item => {
+                if (item.tipo === 'semidisminuido' || item.tipo === 'aumentado') {
+                    const c = item.acorde; if (!c) return;
+                    const svg = generarSVG(c, true);
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `<div class="pair-horizontal"><div class="pair-col" style="justify-content:center;"><div class="no-aplica-text" style="min-height:auto;">No aplica</div></div><div class="pair-divider">→</div><div class="pair-col"><div class="grado">${item.grado}</div><p>${c.cifrado}</p><h3>${c.raiz} ${c.tipo}</h3>${svg}</div></div>`;
+                    card.onclick = () => {
+                        tocarSecuencia([c.trastes]);
+                        const svgL = generarSVG(c, false, true, true);
+                        abrirFullscreen(`<h2>${item.grado}</h2><p>${c.cifrado}</p><h3 class="fs-chord-subtitle">${c.raiz} ${c.tipo}</h3><div class="fs-svg-wrap">${svgL}</div>`, [c.trastes], 'single');
+                    };
+                    cont.appendChild(card);
+                } else if (item.tipo === 'par') {
+                    const { dominante, tonica, gradoDom, gradoTonica } = item;
+                    const svgDom = generarSVG(dominante, true), svgTon = generarSVG(tonica, true);
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `<div class="pair-horizontal"><div class="pair-col"><div class="grado">${gradoDom}</div><p>${dominante.cifrado}</p><h3>${dominante.raiz} ${dominante.tipo}</h3>${svgDom}</div><div class="pair-divider">→</div><div class="pair-col"><div class="grado">${gradoTonica}</div><p>${tonica.cifrado}</p><h3>${tonica.raiz} ${tonica.tipo}</h3>${svgTon}</div></div>`;
+                    card.onclick = () => {
+                        tocarSecuencia([dominante.trastes, tonica.trastes]);
+                        const svgDL = generarSVG(dominante, false, true, true), svgTL = generarSVG(tonica, false, true, true);
+                        abrirFullscreen(`<div class="fs-pair"><div class="fs-pair-item"><h2>${gradoDom}</h2><p>${dominante.cifrado}</p><h3 class="fs-chord-subtitle">${dominante.raiz} ${dominante.tipo}</h3><div class="fs-svg-wrap">${svgDL}</div></div><div class="fs-arrow">→</div><div class="fs-pair-item"><h2>${gradoTonica}</h2><p>${tonica.cifrado}</p><h3 class="fs-chord-subtitle">${tonica.raiz} ${tonica.tipo}</h3><div class="fs-svg-wrap">${svgTL}</div></div></div>`, [dominante.trastes, tonica.trastes], 'pair');
+                    };
+                    cont.appendChild(card);
+                }
+            });
+        } else if (esProg) {
+            const card = document.createElement('div');
+            card.className = 'card prog-card';
+            let html = '<div class="prog-card-row">';
+            filtConGrados.forEach(item => {
+                const c = item.acorde;
+                html += `<div class="prog-card-item"><div class="grado">${item.grado}</div><p>${c.cifrado}</p><h3>${c.raiz} ${c.tipo}</h3>${generarSVG(c, true)}</div>`;
+            });
+            html += '</div>';
+            card.innerHTML = html;
+            const trastesL = filtConGrados.map(i => i.acorde.trastes);
+            card.onclick = () => {
+                tocarSecuencia(trastesL);
+                const renderFs = (item) => {
+                    const c = item.acorde;
+                    return `<div class="fs-prog-item"><div class="grado">${item.grado}</div><p>${c.cifrado}</p><h3 class="fs-chord-subtitle">${c.raiz} ${c.tipo}</h3><div class="fs-svg-wrap">${generarSVG(c, false, true)}</div></div>`;
+                };
+                let fsHtml;
+                if (filtConGrados.length > 6) {
+                    const m = Math.floor(filtConGrados.length / 2);
+                    fsHtml = '<div class="fs-prog-stack"><div class="fs-prog-row">' + filtConGrados.slice(0, m).map(renderFs).join('') + '</div><div class="fs-prog-row">' + filtConGrados.slice(m).map(renderFs).join('') + '</div></div>';
+                } else {
+                    fsHtml = '<div class="fs-prog-row">' + filtConGrados.map(renderFs).join('') + '</div>';
+                }
+                abrirFullscreen(fsHtml, trastesL, 'progression');
+            };
+            cont.appendChild(card);
+        } else {
+            const mostrarNotas = (tV !== 'todos');
+            filtConGrados.forEach(({ acorde: c, grado }) => {
+                if (!c) return;
+                const svg = generarSVG(c, false, false, mostrarNotas);
+                const card = document.createElement('div');
+                card.className = 'card' + (c.tipo.includes('disminuido') ? ' diminished-card' : '');
+                let header = '<div class="card-header">';
+                if (grado) header += `<div class="grado">${grado}</div>`;
+                header += `<p>${c.cifrado}</p><h3>${c.raiz} ${c.tipo}</h3></div>`;
+                card.innerHTML = header + svg;
+                card.onclick = () => {
+                    tocarSecuencia([c.trastes]);
+                    const svgL = generarSVG(c, false, true, true);
+                    let fsHtml = grado ? `<h2>${grado}</h2>` : `<h2>${c.raiz} ${c.tipo}</h2>`;
+                    fsHtml += `<p>${c.cifrado}</p>`;
+                    if (grado) fsHtml += `<h3 class="fs-chord-subtitle">${c.raiz} ${c.tipo}</h3>`;
+                    fsHtml += `<div class="fs-svg-wrap">${svgL}</div>`;
+                    abrirFullscreen(fsHtml, [c.trastes], 'single');
+                };
+                cont.appendChild(card);
+            });
+        }
+        updateResultsSummary();
+    }
+
+    function resetTrigger(id, txt) {
+        const el = $(id);
+        if (!el) return;
+        el.innerHTML = txt;
+        el.classList.remove('selected');
+    }
+    function resetTipoSelect() {
+        setValue('tipoSelect', 'todos');
+        resetTrigger('tipoTrigger', 'Tipo de acorde');
+    }
+    function resetOtherSelects(changedId) {
+        if (changedId === 'tipoSelect') {
+            setValue('progMayorSelect', 'todos'); resetTrigger('progMayorTrigger', 'Progresiones mayores');
+            setValue('progMenorSelect', 'todos'); resetTrigger('progMenorTrigger', 'Progresiones menores');
+            setValue('progOtrasSelect', 'todos'); resetTrigger('progOtrasTrigger', 'Otras progresiones');
+            setValue('acordesTonalidadSelect', 'todos'); resetTrigger('acordesTonalidadTrigger', 'Acordes por tonalidad');
+            setValue('acordesDomSecSelect', 'todos'); resetTrigger('acordesDomSecTrigger', 'Acordes con dominantes secundarias');
+        } else if (changedId === 'progMayorSelect') {
+            resetTipoSelect();
+            setValue('progMenorSelect', 'todos'); resetTrigger('progMenorTrigger', 'Progresiones menores');
+            setValue('progOtrasSelect', 'todos'); resetTrigger('progOtrasTrigger', 'Otras progresiones');
+            setValue('acordesTonalidadSelect', 'todos'); resetTrigger('acordesTonalidadTrigger', 'Acordes por tonalidad');
+            setValue('acordesDomSecSelect', 'todos'); resetTrigger('acordesDomSecTrigger', 'Acordes con dominantes secundarias');
+        } else if (changedId === 'progMenorSelect') {
+            resetTipoSelect();
+            setValue('progMayorSelect', 'todos'); resetTrigger('progMayorTrigger', 'Progresiones mayores');
+            setValue('progOtrasSelect', 'todos'); resetTrigger('progOtrasTrigger', 'Otras progresiones');
+            setValue('acordesTonalidadSelect', 'todos'); resetTrigger('acordesTonalidadTrigger', 'Acordes por tonalidad');
+            setValue('acordesDomSecSelect', 'todos'); resetTrigger('acordesDomSecTrigger', 'Acordes con dominantes secundarias');
+        } else if (changedId === 'progOtrasSelect') {
+            resetTipoSelect();
+            setValue('progMayorSelect', 'todos'); resetTrigger('progMayorTrigger', 'Progresiones mayores');
+            setValue('progMenorSelect', 'todos'); resetTrigger('progMenorTrigger', 'Progresiones menores');
+            setValue('acordesTonalidadSelect', 'todos'); resetTrigger('acordesTonalidadTrigger', 'Acordes por tonalidad');
+            setValue('acordesDomSecSelect', 'todos'); resetTrigger('acordesDomSecTrigger', 'Acordes con dominantes secundarias');
+        } else if (changedId === 'acordesTonalidadSelect') {
+            resetTipoSelect();
+            setValue('progMayorSelect', 'todos'); resetTrigger('progMayorTrigger', 'Progresiones mayores');
+            setValue('progMenorSelect', 'todos'); resetTrigger('progMenorTrigger', 'Progresiones menores');
+            setValue('progOtrasSelect', 'todos'); resetTrigger('progOtrasTrigger', 'Otras progresiones');
+            setValue('acordesDomSecSelect', 'todos'); resetTrigger('acordesDomSecTrigger', 'Acordes con dominantes secundarias');
+        } else if (changedId === 'acordesDomSecSelect') {
+            resetTipoSelect();
+            setValue('progMayorSelect', 'todos'); resetTrigger('progMayorTrigger', 'Progresiones mayores');
+            setValue('progMenorSelect', 'todos'); resetTrigger('progMenorTrigger', 'Progresiones menores');
+            setValue('progOtrasSelect', 'todos'); resetTrigger('progOtrasTrigger', 'Otras progresiones');
+            setValue('acordesTonalidadSelect', 'todos'); resetTrigger('acordesTonalidadTrigger', 'Acordes por tonalidad');
+        }
+    }
+    function resetAllFilters() {
+        setValue('raizSelect', 'todos'); resetTrigger('raizTrigger', 'Nota');
+        resetTipoSelect();
+        setValue('progMayorSelect', 'todos'); resetTrigger('progMayorTrigger', 'Progresiones mayores');
+        setValue('progMenorSelect', 'todos'); resetTrigger('progMenorTrigger', 'Progresiones menores');
+        setValue('progOtrasSelect', 'todos'); resetTrigger('progOtrasTrigger', 'Otras progresiones');
+        setValue('acordesTonalidadSelect', 'todos'); resetTrigger('acordesTonalidadTrigger', 'Acordes por tonalidad');
+        setValue('acordesDomSecSelect', 'todos'); resetTrigger('acordesDomSecTrigger', 'Acordes con dominantes secundarias');
+        setValue('afinacionSelect', 'reentrante'); resetTrigger('afinacionTrigger', 'Afinación');
+        currentTuning = 'reentrante';
+        saveFiltersToLocalStorage();
+        updateHashFromFilters();
+        updateHomeActionBar();
+        showHome();
+    }
+
+    // ============================================================
+    // CUSTOM SELECT (con delegación de eventos)
+    // ============================================================
+    function buildOptionsHTML(type) {
+        let html = '';
+        if (type === 'afinacion') {
+            html = '<div class="custom-option" data-value="reentrante"><span class="prog-bold">Reentrante</span><span class="prog-light"> (A3 - D4 - F#4 - B3)</span></div>';
+            html += '<div class="custom-option" data-value="ascendente"><span class="prog-bold">Ascendente</span><span class="prog-light"> (F3 - Bb3 - D4 - G4)</span></div>';
+        } else if (type === 'nota') {
+            html = '<div class="custom-option" data-value="todos">Nota</div>';
+            html += '<div class="custom-option todos-opcion" data-value="todas">Todas las notas</div>';
+            ordenRaices.forEach(r => { html += '<div class="custom-option" data-value="' + r + '">' + r + '</div>'; });
+        } else if (type === 'tipo') {
+            html = '<div class="custom-option" data-value="todos">Tipo de acorde</div>';
+            html += '<div class="custom-option todos-opcion" data-value="todos_tipos">Todos los tipos</div>';
+            ordenTipos.forEach(t => { html += '<div class="custom-option" data-value="' + t + '">' + t + '</div>'; });
+        } else if (type === 'progMayor') {
+            html = '<div class="custom-option" data-value="todos">Progresiones mayores</div>';
+            for (const k in progresionesMayores) {
+                const it = progresionesMayores[k];
+                html += '<div class="custom-option" data-value="' + k + '"><span class="prog-bold">' + it.labelBold + '</span><span class="prog-light">' + it.labelLight + '</span></div>';
+            }
+        } else if (type === 'progMenor') {
+            html = '<div class="custom-option" data-value="todos">Progresiones menores</div>';
+            for (const k in progresionesMenores) {
+                const it = progresionesMenores[k];
+                html += '<div class="custom-option" data-value="' + k + '"><span class="prog-bold">' + it.labelBold + '</span><span class="prog-light">' + it.labelLight + '</span></div>';
+            }
+        } else if (type === 'progOtras') {
+            html = '<div class="custom-option" data-value="todos">Otras progresiones</div>';
+            for (const k in progresionesOtras) {
+                const it = progresionesOtras[k];
+                html += '<div class="custom-option" data-value="' + k + '"><span class="prog-bold">' + it.labelBold + '</span><span class="prog-light">' + it.labelLight + '</span></div>';
+            }
+        } else if (type === 'acordesTonalidad' || type === 'acordesDomSec') {
+            const txt = type === 'acordesTonalidad' ? 'Acordes por tonalidad' : 'Acordes con dominantes secundarias';
+            html = '<div class="custom-option" data-value="todos">' + txt + '</div>';
+            [['mayor','Mayor'],['menor_natural','Menor natural'],['menor_armonica','Menor armónica'],['menor_melodica','Menor melódica']]
+                .forEach(([v,l]) => { html += '<div class="custom-option" data-value="' + v + '">' + l + '</div>'; });
+        }
+        return html;
+    }
+
+    function handleOptionClick(type, wrapper, opt, optionsContainer, trigger, hiddenInput) {
+        const val = opt.getAttribute('data-value');
+        const esDefault = (opt === optionsContainer.querySelector('.custom-option'));
+        hiddenInput.value = val;
+        trigger.innerHTML = opt.innerHTML;
+        optionsContainer.classList.remove('open');
+
+        if (type === 'afinacion') trigger.classList.add('selected');
+        else if (esDefault) trigger.classList.remove('selected');
+        else trigger.classList.add('selected');
+
+        if (type === 'afinacion') {
+            currentTuning = val;
+            saveFiltersToLocalStorage();
+            updateHashFromFilters();
+            updateHomeActionBar();
+            if (!$('resultsView').classList.contains('view-hidden')) renderChords();
+            return;
+        }
+        if (type === 'nota') {
+            if (val === 'todas') { hiddenInput.value = 'todos'; trigger.classList.remove('selected'); }
+            saveFiltersToLocalStorage();
+            updateHashFromFilters();
+            updateHomeActionBar();
+            return;
+        }
+        if (type === 'tipo') {
+            if (val === 'todos_tipos') { hiddenInput.value = 'todos'; trigger.classList.remove('selected'); }
+            resetOtherSelects('tipoSelect');
+        } else if (type === 'progMayor') resetOtherSelects('progMayorSelect');
+        else if (type === 'progMenor') resetOtherSelects('progMenorSelect');
+        else if (type === 'progOtras') resetOtherSelects('progOtrasSelect');
+        else if (type === 'acordesTonalidad') resetOtherSelects('acordesTonalidadSelect');
+        else if (type === 'acordesDomSec') resetOtherSelects('acordesDomSecSelect');
+
+        intentarNavegar();
+    }
+
+    function setupCustomSelect(wrapperId, triggerId, optionsId, hiddenInputId, type) {
+        const wrapper = $(wrapperId);
+        const trigger = $(triggerId);
+        const optionsContainer = $(optionsId);
+        const hiddenInput = $(hiddenInputId);
+        if (!wrapper || !trigger || !optionsContainer || !hiddenInput) return;
+
+        optionsContainer.innerHTML = buildOptionsHTML(type);
+
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            document.querySelectorAll('.custom-options').forEach(o => { if (o !== optionsContainer) o.classList.remove('open'); });
+            optionsContainer.classList.toggle('open');
+        });
+
+        optionsContainer.addEventListener('click', function(e) {
+            const opt = e.target.closest('.custom-option');
+            if (!opt) return;
+            e.stopPropagation();
+            handleOptionClick(type, wrapper, opt, optionsContainer, trigger, hiddenInput);
+        });
+    }
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    function init() {
+        setupCustomSelect('afinacionWrapper', 'afinacionTrigger', 'afinacionOptions', 'afinacionSelect', 'afinacion');
+        setupCustomSelect('raizWrapper', 'raizTrigger', 'raizOptions', 'raizSelect', 'nota');
+        setupCustomSelect('tipoWrapper', 'tipoTrigger', 'tipoOptions', 'tipoSelect', 'tipo');
+        setupCustomSelect('acordesTonalidadWrapper', 'acordesTonalidadTrigger', 'acordesTonalidadOptions', 'acordesTonalidadSelect', 'acordesTonalidad');
+        setupCustomSelect('acordesDomSecWrapper', 'acordesDomSecTrigger', 'acordesDomSecOptions', 'acordesDomSecSelect', 'acordesDomSec');
+        setupCustomSelect('progMayorWrapper', 'progMayorTrigger', 'progMayorOptions', 'progMayorSelect', 'progMayor');
+        setupCustomSelect('progMenorWrapper', 'progMenorTrigger', 'progMenorOptions', 'progMenorSelect', 'progMenor');
+        setupCustomSelect('progOtrasWrapper', 'progOtrasTrigger', 'progOtrasOptions', 'progOtrasSelect', 'progOtras');
+
+        document.addEventListener('click', function() {
+            document.querySelectorAll('.custom-options').forEach(o => o.classList.remove('open'));
+        });
+
+        if (!document.documentElement.dataset.theme) {
+            document.documentElement.dataset.theme = getSystemTheme();
+        }
+        updateThemeToggleIcon();
+
+        try { bucleActivo = localStorage.getItem('cuatro-bucle') === '1'; } catch (e) { bucleActivo = false; }
+        actualizarBotonBucle();
+
+        restoreFilters();
+        updateHomeActionBar();
+
+        if (readHash()) {
+            const { valid } = checkRequirements();
+            if (valid) { renderChords(); showResults(); return; }
+        }
+        showHome();
+    }
+    document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
