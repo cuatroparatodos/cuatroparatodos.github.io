@@ -1,0 +1,431 @@
+apps/afinador/index.html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Afinador de Cuatro | Ángel Martínez</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-global: #f2f2f2;
+            --text-dark: #333333;
+            --text-muted: #777777;
+            --accent-red: #ff0000;
+            --indicator-bg: rgba(0, 0, 0, 0.04);
+            --indicator-active: #ffffff;
+            --block-default: #d0d0d0;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-global);
+            color: var(--text-dark);
+            font-family: 'Poppins', sans-serif;
+            font-weight: 200;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .tuner-layout {
+            width: 100%;
+            max-width: 1000px;
+            display: grid;
+            grid-template-columns: 220px 1fr 220px;
+            gap: 20px;
+            align-items: center;
+            text-align: center;
+        }
+        @media (max-width: 768px) {
+            .tuner-layout { grid-template-columns: 1fr; }
+        }
+        .header-section { grid-column: 1 / -1; margin-bottom: 20px; }
+        .main-title { font-size: 1.8rem; font-weight: 400; letter-spacing: 2px; color: var(--text-muted); text-transform: uppercase; }
+        .author-name { font-size: 1.6rem; font-weight: 300; font-style: italic; color: var(--text-dark); }
+        .column-title { font-size: 1.1rem; font-weight: 400; line-height: 1.3; margin-bottom: 15px; color: #000000; }
+        .string-list { display: flex; flex-direction: column; gap: 10px; }
+        .string-row {
+            background-color: var(--indicator-bg);
+            border-radius: 8px;
+            padding: 12px 15px;
+            font-size: 0.95rem;
+            font-weight: 300;
+            color: var(--text-muted);
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+        }
+        .string-row strong { font-weight: 400; color: var(--text-dark); }
+        .string-row.active-detected {
+            background-color: var(--indicator-active);
+            border-color: rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            font-weight: 400;
+        }
+        .center-tuner { display: flex; flex-direction: column; align-items: center; padding: 10px; }
+        
+        .tuner-container {
+            position: relative;
+            width: 360px;
+            height: 200px;
+            margin-bottom: 10px;
+        }
+        .center-info {
+            position: absolute;
+            top: 135px;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 10;
+        }
+        .detected-note { font-size: 5rem; font-weight: 300; line-height: 1; color: var(--text-dark); }
+        .status-text { font-size: 0.85rem; font-weight: 400; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 5px; }
+
+        .svg-arc-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .flat-sign { position: absolute; top: 115px; left: 10px; font-size: 2.5rem; color: #ccc; user-select: none; }
+        .sharp-sign { position: absolute; top: 115px; right: 10px; font-size: 2.5rem; color: #ccc; user-select: none; }
+
+        .frequency-display { font-size: 2.2rem; font-weight: 300; color: #000000; margin-top: 25px; min-height: 40px; }
+        
+        .btn-action {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 400;
+            letter-spacing: 1px;
+            padding: 12px 45px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 2px solid var(--accent-red);
+            transition: all 0.2s ease;
+            margin-top: 25px;
+            outline: none;
+        }
+        .btn-action.state-start { background-color: var(--accent-red); color: #ffffff; }
+        .btn-action.state-stop { background-color: #ffffff; color: var(--accent-red); border-color: var(--accent-red); }
+    </style>
+</head>
+<body>
+
+    <div class="tuner-layout">
+        <div class="header-section">
+            <h1 class="main-title">Afinador</h1>
+            <h2 class="author-name">Ángel Martínez</h2>
+        </div>
+
+        <div class="string-list">
+            <h3 class="column-title">Afinación<br>reentrante</h3>
+            <div id="r-4" class="string-row"><span>La – <strong>A3</strong></span> <span>: 220</span></div>
+            <div id="r-3" class="string-row"><span>Re – <strong>D4</strong></span> <span>: 294</span></div>
+            <div id="r-2" class="string-row"><span>Fa# – <strong>F#4</strong></span> <span>: 370</span></div>
+            <div id="r-1" class="string-row"><span>Si – <strong>B3</strong></span> <span>: 247</span></div>
+        </div>
+
+        <div class="center-tuner">
+            <div class="tuner-container">
+                <div class="flat-sign">♭</div>
+                <div class="svg-arc-container">
+                    <svg width="100%" height="100%" viewBox="0 0 360 200">
+                        <g id="blocks-group"></g>
+                    </svg>
+                </div>
+                <div class="sharp-sign">♯</div>
+                
+                <div class="center-info">
+                    <div id="display-note" class="detected-note">--</div>
+                    <div id="display-status" class="status-text">-</div>
+                </div>
+            </div>
+
+            <div id="display-hz" class="frequency-display">0.0 Hz</div>
+            <button id="tuner-btn" class="btn-action state-start" onclick="toggleTuner()">AFINAR</button>
+        </div>
+
+        <div class="string-list">
+            <h3 class="column-title">Afinación<br>ascendente</h3>
+            <div id="a-4" class="string-row"><span>Fa – <strong>F3</strong></span> <span>: 175</span></div>
+            <div id="a-3" class="string-row"><span>Sib – <strong>Bb3</strong></span> <span>: 233</span></div>
+            <div id="a-2" class="string-row"><span>Re – <strong>D4</strong></span> <span>: 294</span></div>
+            <div id="a-1" class="string-row"><span>Sol – <strong>G4</strong></span> <span>: 392</span></div>
+        </div>
+    </div>
+
+    <script>
+        let audioContext = null;
+        let analyser = null;
+        let scriptProcessor = null;
+        let streamSource = null;
+        let isRunning = false;
+        let animationFrameId = null;
+        
+        const bufferSize = 2048;
+        const sampleBuffer = new Float32Array(bufferSize);
+        
+        let currentDisplayedHz = 0.0;
+        let targetHzToDisplay = 0.0;
+
+        const targetFrequencies = [
+            { id: "r-4", note: "A3", targetHz: 220.00 },
+            { id: "r-3", note: "D4", targetHz: 293.66 },
+            { id: "r-2", note: "F#4", targetHz: 369.99 },
+            { id: "r-1", note: "B3", targetHz: 246.94 },
+            { id: "a-4", note: "F3", targetHz: 174.61 },
+            { id: "a-3", note: "Bb3", targetHz: 233.08 },
+            { id: "a-2", note: "D4", targetHz: 293.66 },
+            { id: "a-1", note: "G4", targetHz: 392.00 }
+        ];
+
+        const blockColors = {
+            1: "#800000", 2: "#e60000", 3: "#ff6600", 4: "#ffcc00",
+            5: "#62a855",
+            6: "#ffcc00", 7: "#ff6600", 8: "#e60000", 9: "#800000"
+        };
+
+        const UI = {
+            btn: document.getElementById("tuner-btn"),
+            note: document.getElementById("display-note"),
+            hz: document.getElementById("display-hz"),
+            status: document.getElementById("display-status"),
+            group: document.getElementById("blocks-group")
+        };
+
+        function drawArcBlocks() {
+            UI.group.innerHTML = "";
+            const centerX = 180;
+            const centerY = 145;
+            const radius = 115;
+            const startAngle = -80;
+            const endAngle = 80;
+            const totalBlocks = 9;
+            const step = (endAngle - startAngle) / (totalBlocks - 1);
+
+            for (let i = 0; i < totalBlocks; i++) {
+                let angleDeg = startAngle + (i * step);
+                let angleRad = (angleDeg - 90) * Math.PI / 180;
+                
+                let x = centerX + radius * Math.cos(angleRad);
+                let y = centerY + radius * Math.sin(angleRad);
+                
+                let rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                rect.setAttribute("id", `blk-${i + 1}`);
+                rect.setAttribute("x", (x - 16).toString());
+                rect.setAttribute("y", (y - 8).toString());
+                rect.setAttribute("width", "32");
+                rect.setAttribute("height", "16");
+                rect.setAttribute("rx", "4");
+                rect.setAttribute("ry", "4");
+                rect.setAttribute("fill", "var(--block-default)");
+                rect.setAttribute("transform", `rotate(${angleDeg}, ${x}, ${y})`);
+                rect.style.transition = "fill 0.1s ease";
+                
+                UI.group.appendChild(rect);
+            }
+        }
+
+        window.addEventListener("DOMContentLoaded", drawArcBlocks);
+
+        async function toggleTuner() {
+            if (isRunning) { stopAudio(); return; }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+                });
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = bufferSize * 2;
+                streamSource = audioContext.createMediaStreamSource(stream);
+                scriptProcessor = audioContext.createScriptProcessor(bufferSize, 1, 1);
+                
+                scriptProcessor.onaudioprocess = (e) => {
+                    if (!isRunning) return;
+                    e.inputBuffer.copyFromChannel(sampleBuffer, 0);
+                    detectPitchYIN(sampleBuffer, audioContext.sampleRate);
+                };
+                
+                streamSource.connect(analyser);
+                analyser.connect(scriptProcessor);
+                scriptProcessor.connect(audioContext.destination);
+                isRunning = true;
+                UI.btn.innerText = "Dejar de afinar";
+                UI.btn.className = "btn-action state-stop";
+                UI.status.innerText = "Escuchando...";
+                
+                updateHzDOM();
+            } catch (err) {
+                console.error(err);
+                UI.status.innerText = "Error de micrófono";
+            }
+        }
+
+        function stopAudio() {
+            isRunning = false;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            if (scriptProcessor) scriptProcessor.disconnect();
+            if (streamSource) streamSource.disconnect();
+            if (audioContext) audioContext.close();
+            
+            UI.btn.innerText = "AFINAR";
+            UI.btn.className = "btn-action state-start";
+            UI.note.innerText = "--";
+            UI.hz.innerText = "0.0 Hz";
+            UI.status.innerText = "-";
+            targetHzToDisplay = 0.0;
+            currentDisplayedHz = 0.0;
+            
+            clearActiveRows();
+            resetBlocks();
+        }
+
+        function updateHzDOM() {
+            if (!isRunning) return;
+            if (targetHzToDisplay > 0) {
+                currentDisplayedHz += (targetHzToDisplay - currentDisplayedHz) * 0.4;
+                if (Math.abs(currentDisplayedHz - targetHzToDisplay) < 0.05) {
+                    currentDisplayedHz = targetHzToDisplay;
+                }
+                UI.hz.innerText = `${currentDisplayedHz.toFixed(1)} Hz`;
+            }
+            animationFrameId = requestAnimationFrame(updateHzDOM);
+        }
+
+        function detectPitchYIN(buffer, sampleRate) {
+            let rms = 0;
+            for (let i = 0; i < buffer.length; i++) rms += buffer[i] * buffer[i];
+            rms = Math.sqrt(rms / buffer.length);
+            if (rms < 0.008) return;
+
+            const halfLen = buffer.length / 2;
+            const yinBuffer = new Float32Array(halfLen);
+            
+            for (let tau = 0; tau < halfLen; tau++) {
+                let diff = 0;
+                for (let i = 0; i < halfLen; i++) {
+                    let delta = buffer[i] - buffer[i + tau];
+                    diff += delta * delta;
+                }
+                yinBuffer[tau] = diff;
+            }
+
+            let runningSum = 0;
+            yinBuffer[0] = 1;
+            for (let tau = 1; tau < halfLen; tau++) {
+                runningSum += yinBuffer[tau];
+                yinBuffer[tau] = yinBuffer[tau] / (runningSum / tau);
+            }
+
+            const threshold = 0.10;
+            let tauFound = -1;
+            for (let tau = 1; tau < halfLen; tau++) {
+                if (yinBuffer[tau] < threshold) {
+                    tauFound = tau;
+                    while (tau + 1 < halfLen && yinBuffer[tau + 1] < yinBuffer[tau]) {
+                        tau++;
+                        tauFound = tau;
+                    }
+                    break;
+                }
+            }
+
+            if (tauFound === -1) {
+                let minVal = Infinity;
+                for (let tau = 1; tau < halfLen; tau++) {
+                    if (yinBuffer[tau] < minVal) { minVal = yinBuffer[tau]; tauFound = tau; }
+                }
+            }
+
+            if (tauFound > 0 && tauFound < halfLen - 1) {
+                let alpha = yinBuffer[tauFound - 1];
+                let beta = yinBuffer[tauFound];
+                let gamma = yinBuffer[tauFound + 1];
+                let denominator = alpha - 2 * beta + gamma;
+                
+                let p = 0;
+                if (Math.abs(denominator) > 0.00001) {
+                    p = 0.5 * (alpha - gamma) / denominator;
+                }
+                
+                let preciseTau = tauFound + p;
+                let frequency = sampleRate / preciseTau;
+
+                if (frequency >= 150 && frequency <= 600) {
+                    processFrequency(frequency);
+                }
+            }
+        }
+
+        function processFrequency(hz) {
+            targetHzToDisplay = hz;
+            clearActiveRows();
+            resetBlocks();
+            
+            let closestTarget = null;
+            let minCentsDifference = Infinity;
+
+            targetFrequencies.forEach(target => {
+                let centsDiff = 1200 * Math.log2(hz / target.targetHz);
+                if (Math.abs(centsDiff) < 50 && Math.abs(centsDiff) < Math.abs(minCentsDifference)) {
+                    minCentsDifference = centsDiff;
+                    closestTarget = target;
+                }
+            });
+
+            if (closestTarget) {
+                UI.note.innerText = closestTarget.note;
+                targetFrequencies.forEach(t => {
+                    if (t.note === closestTarget.note) { document.getElementById(t.id).classList.add("active-detected"); }
+                });
+
+                let cents = minCentsDifference;
+                let activeBlock = 5;
+
+                if (cents < -35) activeBlock = 1;
+                else if (cents >= -35 && cents < -20) activeBlock = 2;
+                else if (cents >= -20 && cents < -10) activeBlock = 3;
+                else if (cents >= -10 && cents < -4) activeBlock = 4;
+                else if (cents >= -4 && cents <= 4) activeBlock = 5;
+                else if (cents > 4 && cents <= 10) activeBlock = 6;
+                else if (cents > 10 && cents <= 20) activeBlock = 7;
+                else if (cents > 20 && cents <= 35) activeBlock = 8;
+                else if (cents > 35) activeBlock = 9;
+
+                let blockEl = document.getElementById(`blk-${activeBlock}`);
+                if (blockEl) blockEl.setAttribute("fill", blockColors[activeBlock]);
+
+                if (activeBlock === 5) {
+                    UI.status.innerText = "In tune";
+                } else if (activeBlock < 5) {
+                    UI.status.innerText = "Bajo";
+                } else {
+                    UI.status.innerText = "Alto";
+                }
+            } else {
+                UI.note.innerText = "--";
+                UI.status.innerText = "Buscando...";
+            }
+        }
+
+        function clearActiveRows() {
+            targetFrequencies.forEach(t => { document.getElementById(t.id).classList.remove("active-detected"); });
+        }
+
+        function resetBlocks() {
+            for (let i = 1; i <= 9; i++) {
+                let blockEl = document.getElementById(`blk-${i}`);
+                if (blockEl) blockEl.setAttribute("fill", "var(--block-default)");
+            }
+        }
+    </script>
+</body>
+</html>
