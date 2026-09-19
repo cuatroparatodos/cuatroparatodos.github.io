@@ -1,0 +1,2021 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entrenador de Rasgueo — Cuatro venezolano</title>
+<style>
+  :root {
+    --bg: #eaeef2; --surface: #ffffff; --surface-2: #f4f7fa;
+    --ink: #2c3a45; --ink-soft: #5a6b7a; --ink-muted: #7e8e9d;
+    --line: #c5d0da; --line-soft: #dde4ea;
+    --accent: #5a7a94; --accent-hover: #46637a; --accent-soft: #dde6ee;
+    --warn: #c98a3c; --warn-soft: #fdf3e3;
+    --shadow: 0 2px 8px rgba(44, 58, 69, 0.06);
+    --radius: 10px; --radius-lg: 14px;
+    --dg-nut: #2c3a45; --dg-fret: #dde4ea; --dg-string: #b6c4d0;
+    --dg-fretnum: #7e8e9d; --dg-open: #2c3a45; --dg-dot: #2c3a45;
+    --dg-dot-text: #ffffff; --dg-barra: #2c3a45; --dg-sep: #c5d0da;
+    --dg-deg: #7e8e9d; --dg-note: #2c3a45;
+  }
+  [data-theme="dark"] {
+    --bg: #14181c; --surface: #1e242a; --surface-2: #262e36;
+    --ink: #e4eaef; --ink-soft: #a8b4c0; --ink-muted: #75828f;
+    --line: #39434c; --line-soft: #2a333b;
+    --accent: #8fb0cd; --accent-hover: #a9c4dc; --accent-soft: #2b3a47;
+    --warn: #e0b071; --warn-soft: #3a3024;
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    --dg-nut: #c8d2db; --dg-fret: #39434c; --dg-string: #56626d;
+    --dg-fretnum: #7e8e9d; --dg-open: #c8d2db; --dg-dot: #c8d2db;
+    --dg-dot-text: #1a1f24; --dg-barra: #c8d2db; --dg-sep: #39434c;
+    --dg-deg: #7e8e9d; --dg-note: #e4eaef;
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; padding:0; min-height:100%; }
+  body {
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+    background:var(--bg); color:var(--ink);
+    min-height:100vh; display:flex; flex-direction:column;
+    transition:background .2s, color .2s;
+  }
+  #appHeader {
+    padding:32px 22px 18px; text-align:center;
+    border-bottom:1px solid var(--line); background:var(--surface);
+    flex-shrink:0; position:relative;
+  }
+  #appHeader .title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size:32px; font-weight:700; margin:0 0 4px;
+    letter-spacing:-0.5px; color:var(--ink);
+  }
+  #appHeader .subtitle {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size:16px; color:var(--ink-soft); margin:0 0 4px;
+  }
+  #appHeader .author {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-style: italic; font-size:20px; color:var(--ink-muted);
+    margin:0; letter-spacing:.3px;
+  }
+  #appHeader .theme-toggle {
+    position:absolute; top:16px; right:20px;
+    background:transparent; border:1px solid var(--line); color:var(--ink);
+    border-radius:var(--radius); padding:6px 10px; cursor:pointer; font-size:14px;
+  }
+  #appHeader .theme-toggle:hover { border-color:var(--accent); color:var(--accent); }
+  body.practicando #appHeader { display:none; }
+
+  main { flex:1; display:flex; flex-direction:column; }
+  body:not(.practicando) main {
+    padding:30px 22px 40px; max-width:540px; width:100%; margin:0 auto; gap:16px;
+  }
+  body.practicando main {
+    padding:12px; width:100%; gap:10px; overflow-y:auto; max-width:none;
+  }
+  .view { display:none; flex-direction:column; gap:16px; }
+  body.practicando .view { gap:10px; }
+  .view.active { display:flex; }
+  .view > * { flex-shrink: 0; }
+
+  .panel {
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius-lg); padding:16px 18px;
+  }
+  body.practicando .panel { padding:12px 16px; }
+
+  .field { display:flex; flex-direction:column; gap:5px; }
+  .field label {
+    font-size:11px; color:var(--ink-muted);
+    text-transform:uppercase; letter-spacing:1px; font-weight:600;
+  }
+  .field select {
+    background:var(--surface); color:var(--ink);
+    border:1px solid var(--line); border-radius:var(--radius);
+    padding:11px 14px; font-size:14px; font-family:inherit;
+    outline:none; cursor:pointer; transition:border-color .15s; width:100%;
+  }
+  .field select:focus { border-color:var(--accent); }
+
+  .fields-col { display:flex; flex-direction:column; gap:12px; }
+
+  .warn-banner {
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--warn-soft); color:var(--warn);
+    border:1px solid var(--warn); border-radius:var(--radius);
+    padding:10px 14px; font-size:13px; font-weight:500; text-align:center;
+  }
+  .warn-banner.hidden { display:none; }
+
+  .pattern-preview {
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius-lg); padding:20px 16px;
+    display:flex; flex-direction:column; align-items:center;
+  }
+  .pattern-preview .label {
+    font-size:11px; color:var(--ink-muted);
+    text-transform:uppercase; letter-spacing:1.5px;
+    margin-bottom:12px; text-align:center;
+  }
+  .pattern-preview .label b {
+    color:var(--ink); font-weight:600;
+    font-size:12px; letter-spacing:1.2px; margin-left:6px;
+  }
+  .pattern {
+    display:flex; gap:6px; align-items:center; justify-content:center; flex-wrap:wrap;
+  }
+  .cell {
+    width:52px; height:80px;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    font-size:42px; line-height:1;
+    border:2px solid transparent; border-radius:var(--radius-lg);
+    transition:transform .12s, border-color .12s, background .12s, color .12s;
+    user-select:none; position:relative; padding-top:14px;
+  }
+  .cell.arrow { background:var(--surface-2); border-color:var(--line); color:var(--ink); }
+  .cell.dash  { background:transparent; border-color:transparent; color:var(--ink-muted); font-size:36px; padding-top:0; }
+  .cell .flecha { font-size:42px; line-height:1; }
+  .cell .simbolo-arriba {
+    position:absolute; top:2px; left:0; right:0;
+    text-align:center; font-size:13px; font-weight:700;
+    line-height:1; color:var(--accent);
+    font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  }
+  .cell.dash .simbolo-arriba { display:none; }
+
+  /* Dos golpes dentro de una misma corchea */
+  .flecha-par {
+    display:flex; gap:0; align-items:center; justify-content:center;
+    width:100%; height:100%;
+  }
+  .flecha-item {
+    position:relative; flex:1;
+    display:flex; align-items:center; justify-content:center;
+    height:100%;
+  }
+  .flecha-item .flecha { font-size:30px; line-height:1; }
+  .flecha-item .simbolo-arriba {
+    position:absolute; top:-10px; left:0; right:0;
+    text-align:center; font-size:11px; font-weight:700;
+    line-height:1; color:var(--accent);
+    font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  }
+  body.practicando .flecha-item .flecha { font-size:26px; }
+  body.practicando .flecha-item .simbolo-arriba { font-size:10px; top:-8px; }
+  @media (max-width:600px) {
+    .flecha-item .flecha { font-size:22px; }
+    .flecha-item .simbolo-arriba { font-size:9px; top:-7px; }
+  }
+
+  .quality {
+    background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius-lg); overflow:hidden;
+  }
+  .quality summary {
+    cursor:pointer; padding:14px 18px;
+    font-size:12px; font-weight:600; color:var(--ink-muted);
+    letter-spacing:1.5px; text-transform:uppercase;
+    list-style:none; display:flex; align-items:center; justify-content:space-between;
+    user-select:none;
+  }
+  .quality summary::-webkit-details-marker { display:none; }
+  .quality summary::after { content:'▾'; font-size:14px; transition:transform .2s; }
+  .quality[open] summary::after { transform:rotate(180deg); }
+  .quality summary:hover { color:var(--accent); }
+  .quality-body { padding:0 18px 18px; display:grid; gap:14px; }
+
+  .row {
+    display:grid; grid-template-columns:90px 1fr auto;
+    gap:12px; align-items:center; font-size:13px; color:var(--ink-muted);
+  }
+  .row input[type=range] { width:100%; accent-color:var(--accent); }
+  .num-wrap { display:inline-flex; align-items:center; gap:6px; font-variant-numeric:tabular-nums; }
+  .num-input {
+    width:56px; text-align:right;
+    background:var(--surface-2); border:1px solid var(--line);
+    border-radius:6px; color:var(--ink); font-family:inherit;
+    font-size:13px; font-weight:600; padding:4px 6px;
+    outline:none; transition:border-color .15s, background .15s;
+  }
+  .num-input:focus { border-color:var(--accent); background:var(--surface); }
+  .num-unit { font-size:12px; color:var(--ink-muted); min-width:22px; }
+
+  .btn {
+    background:var(--surface); border:1px solid var(--line); color:var(--ink);
+    border-radius:var(--radius); font-family:inherit; font-size:14px;
+    cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
+    gap:8px;
+    transition:background .15s, border-color .15s, color .15s, transform .08s;
+    user-select:none; -webkit-tap-highlight-color:transparent;
+  }
+  .btn.wide {
+    width:100%; height:56px; font-size:16px; font-weight:600;
+    background:var(--accent); color:#fff; border-color:var(--accent);
+    border-radius:var(--radius-lg);
+  }
+  .btn.wide:hover:not(:disabled) { background:var(--accent-hover); }
+  .btn.wide:disabled {
+    background:var(--line); color:var(--ink-muted);
+    border-color:var(--line); cursor:not-allowed;
+  }
+  .btn.ghost {
+    width:100%; height:40px; font-size:13px; font-weight:500;
+    background:transparent; color:var(--ink-soft); border:1px solid var(--line);
+  }
+  .btn.ghost:hover { border-color:var(--accent); color:var(--accent); }
+
+  .pattern-anchor {
+    position:relative;
+    display:inline-flex; justify-content:center; align-items:center;
+  }
+  .pattern-left { display:flex; flex-direction:column; align-items:center; }
+  .pattern-right {
+    display:none; flex-direction:column; gap:8px;
+    align-items:flex-start; white-space:nowrap;
+    position:absolute; left:calc(100% + 70px);
+    top:50%; transform:translateY(-50%);
+  }
+  body.practicando .pattern-right { display:flex; }
+
+  .btn.back {
+    position:absolute; right:calc(100% + 70px);
+    top:50%; transform:translateY(-50%);
+    height:36px; padding:0 14px; font-size:12px;
+    background:var(--surface); border:1px solid var(--line); color:var(--ink);
+    white-space:nowrap;
+  }
+  .btn.back:hover { border-color:var(--accent); color:var(--accent); }
+
+  .pattern-title {
+    font-size:12px; color:var(--ink-muted);
+    text-transform:uppercase; letter-spacing:0.8px;
+    line-height:1.4; white-space:nowrap;
+  }
+  .pattern-title b { color:var(--ink); font-weight:600; font-size:12px; letter-spacing:0.8px; }
+  .pattern-info-line {
+    font-size:12px; color:var(--ink-muted);
+    text-transform:uppercase; letter-spacing:0.8px;
+    font-variant-numeric:tabular-nums;
+    display:flex; gap:12px; flex-wrap:nowrap;
+    white-space:nowrap; line-height:1.4;
+  }
+  .pattern-info-line b {
+    color:var(--ink); font-weight:600;
+    font-size:12px; letter-spacing:0;
+    text-transform:none; margin-left:3px;
+  }
+
+  body.practicando .cell { width:52px; height:74px; font-size:38px; padding-top:12px; }
+  body.practicando .cell.dash { font-size:32px; padding-top:0; }
+  body.practicando .cell .flecha { font-size:38px; }
+  body.practicando .cell .simbolo-arriba { font-size:12px; top:1px; }
+  body.practicando .cell.arrow.active {
+    border-color:var(--accent); background:var(--accent-soft); color:var(--accent);
+    transform:scale(1.08); box-shadow:0 0 24px rgba(90, 122, 148, .35);
+  }
+  [data-theme="dark"] body.practicando .cell.arrow.active {
+    box-shadow:0 0 24px rgba(143, 176, 205, .35);
+  }
+
+  .transport {
+    display:flex; gap:12px; align-items:center; justify-content:center;
+    flex-wrap:wrap; max-width:720px; margin:0 auto; width:100%;
+  }
+  .btn.transport { width:140px; height:48px; padding:0; }
+  body.practicando .btn.transport { width:126px; height:44px; font-size:13px; }
+  .btn.transport:hover { border-color:var(--accent); color:var(--accent); }
+  .btn.transport:active { background:var(--accent-soft); transform:scale(.97); }
+  .btn.metro { margin-left:auto; height:48px; padding:0 18px; }
+  body.practicando .btn.metro { height:44px; font-size:13px; padding:0 14px; }
+  .btn.metro:hover { border-color:var(--accent); color:var(--accent); }
+  .btn.metro:active { background:var(--accent-soft); transform:scale(.97); }
+  .btn.metro.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+  .sliders-compact {
+    display: grid; gap: 14px; grid-template-columns: 1fr;
+    max-width: 700px; margin: 0 auto; width: 100%;
+  }
+  .sliders-compact .row {
+    display: grid; grid-template-columns: 110px 1fr auto;
+    gap: 10px; align-items: center;
+    font-size: 13px; color: var(--ink-muted);
+  }
+  .sliders-compact .row input[type=range] { width: 100%; accent-color: var(--accent); }
+
+  .repeticiones-row {
+    display: grid; grid-template-columns: 110px 1fr auto;
+    gap: 10px; align-items: center;
+    font-size: 13px; color: var(--ink-muted);
+  }
+  .reps-input {
+    width: 70px; text-align: right;
+    background:var(--surface-2); border:1px solid var(--line);
+    border-radius:6px; color:var(--ink); font-family:inherit;
+    font-size:14px; font-weight:600; padding:6px 8px;
+    outline:none; transition:border-color .15s, background .15s;
+  }
+  .reps-input:focus { border-color:var(--accent); background:var(--surface); }
+  .reps-status {
+    font-size:14px; font-weight:600;
+    color:var(--accent); text-align:right; padding-right:6px;
+    font-variant-numeric:tabular-nums;
+  }
+  .reps-status.completado { font-weight:700; }
+
+  .diagrams {
+    display:flex; flex-direction:column; gap:10px;
+    justify-content:center; align-items:center;
+    min-height:60px; width:100%;
+  }
+  body.practicando .diagrams { gap:8px; }
+  .diagram-row {
+    display:flex; gap:8px;
+    justify-content:center; align-items:flex-start;
+    flex-wrap:nowrap; width:100%;
+  }
+  .diagram-card {
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    padding:8px 6px 6px;
+    border:2px solid transparent; border-radius:12px;
+    transition:border-color .15s, background .15s;
+    flex:0 0 auto; min-width:140px;
+  }
+  body.practicando .diagram-card { padding:6px 4px 4px; min-width:130px; gap:2px; }
+  .diagram-card.current { border-color:var(--accent); background:var(--accent-soft); }
+  .diagram-card .nombre { font-size:14px; font-weight:600; color:var(--ink); letter-spacing:.5px; }
+  .diagram-card.current .nombre { color:var(--accent); }
+  .diagram-card .grado {
+    font-size:10px; color:var(--ink-muted);
+    text-transform:uppercase; letter-spacing:1px;
+  }
+  .diagram-card.current .grado { color:var(--accent); }
+
+  .diagram-svg {
+    width: 100%; max-width: 175px; height: auto;
+    margin: 0 auto; display: block; pointer-events: none;
+  }
+  body.practicando .diagram-svg { max-width: 155px; }
+
+  .dg-nut       { stroke: var(--dg-nut); }
+  .dg-fret      { stroke: var(--dg-fret); }
+  .dg-string    { stroke: var(--dg-string); }
+  .dg-fretnum   { fill: var(--dg-fretnum); }
+  .dg-open      { stroke: var(--dg-open); fill: none; }
+  .dg-dot       { fill: var(--dg-dot); }
+  .dg-dot-txt   { fill: var(--dg-dot-text); }
+  .dg-barra     { fill: var(--dg-barra); }
+  .dg-barra-txt { fill: var(--dg-dot-text); }
+
+  .empty-msg {
+    text-align:center; color:var(--ink-muted); font-size:14px; padding:24px 20px;
+  }
+
+  .status-samples {
+    position:fixed; top:14px; left:50%; transform:translateX(-50%);
+    background:var(--surface); border:1px solid var(--line);
+    color:var(--ink-muted); font-size:11px;
+    padding:6px 12px; border-radius:20px;
+    box-shadow:var(--shadow); z-index:50;
+  }
+  .status-samples.ok { color:var(--accent); border-color:var(--accent); }
+  .status-samples.warn { color:var(--warn); border-color:var(--warn); }
+
+  #progPreviewConfig.no-aplica { color: var(--ink-muted); font-style: italic; }
+
+  @media (max-width:800px) {
+    body.practicando .pattern-panel { padding:12px 14px; }
+    body.practicando .pattern-anchor { flex-direction:column; align-items:center; gap:12px; }
+    body.practicando .btn.back {
+      position:static; transform:none;
+      align-self:flex-start; margin-bottom:4px; padding:0 14px;
+    }
+    body.practicando .pattern-right {
+      position:static; transform:none;
+      align-items:center; white-space:normal;
+    }
+    .pattern-info-line { justify-content:center; flex-wrap:wrap; }
+    .diagram-row { flex-wrap:wrap; }
+  }
+
+  @media (max-width:600px) {
+    #appHeader .title { font-size:24px; }
+    #appHeader .author { font-size:16px; }
+    body:not(.practicando) main { padding:20px 14px 30px; }
+    body.practicando .cell { width:40px; height:60px; font-size:30px; padding-top:9px; }
+    body.practicando .cell .flecha { font-size:30px; }
+    body.practicando .cell .simbolo-arriba { font-size:10px; top:0; }
+    .cell { width:44px; height:66px; font-size:32px; padding-top:10px; }
+    .cell .flecha { font-size:32px; }
+    .btn.transport { width:110px; }
+    body.practicando .btn.transport { width:100px; height:40px; font-size:12px; }
+    .diagram-card { min-width:120px; }
+  }
+</style>
+</head>
+<body>
+  <header id="appHeader">
+    <button class="theme-toggle" id="btnTheme" title="Tema">🌙</button>
+    <h1 class="title">Entrenador de Rasgueo</h1>
+    <p class="subtitle">Cuatro venezolano</p>
+    <p class="author">Ángel Martínez</p>
+  </header>
+
+  <main>
+    <section class="view active" id="viewConfig">
+      <div class="panel fields-col">
+        <div class="field">
+          <label for="selCompas">Compás</label>
+          <select id="selCompas"></select>
+        </div>
+        <div class="field">
+          <label for="selPRA">Patrón rítmico de acompañamiento</label>
+          <select id="selPRA"></select>
+        </div>
+        <div class="field">
+          <label for="selRepique">Repique</label>
+          <select id="selRepique"></select>
+        </div>
+      </div>
+
+      <div class="panel fields-col">
+        <div class="field">
+          <label for="selModo">Modo</label>
+          <select id="selModo">
+            <option value="">— Seleccionar —</option>
+            <option value="acorde">Acorde suelto</option>
+            <option value="progresion">Progresión</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="panel fields-col" id="contextAcorde" style="display:none">
+        <div class="field">
+          <label for="selRaiz">Raíz</label>
+          <select id="selRaiz"></select>
+        </div>
+        <div class="field">
+          <label for="selTipo">Tipo</label>
+          <select id="selTipo"></select>
+        </div>
+      </div>
+
+      <div class="panel fields-col" id="contextProgresion" style="display:none">
+        <div class="field">
+          <label for="selProgCat">Categoría</label>
+          <select id="selProgCat">
+            <option value="">— Seleccionar —</option>
+            <option value="mayores">Mayores</option>
+            <option value="menores">Menores</option>
+            <option value="otras">Otras</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="selProg">Progresión</label>
+          <select id="selProg"></select>
+        </div>
+        <div class="field">
+          <label for="selTono">Tonalidad</label>
+          <select id="selTono"></select>
+        </div>
+        <div class="field">
+          <label>Detalle</label>
+          <div id="progPreviewConfig" style="font-size:14px; padding:11px 14px; color:var(--accent); letter-spacing:.4px;">—</div>
+        </div>
+      </div>
+
+      <div class="warn-banner hidden" id="warnBanner">
+        <span>⚠</span>
+        <span id="warnText">Falta seleccionar</span>
+      </div>
+
+      <div class="pattern-preview">
+        <div class="label" id="patternHeaderConfig">Patrón</div>
+        <div class="pattern" id="patternConfig"></div>
+      </div>
+
+      <details class="quality">
+        <summary>Calidad del sonido</summary>
+        <div class="quality-body">
+          <div class="row">
+            <label for="sDecay">Cuerpo</label>
+            <input id="sDecay" type="range" min="0.8" max="8" value="3.0" step="0.05">
+            <span class="num-wrap">
+              <input class="num-input" id="nDecay" type="text" inputmode="decimal" value="3.0">
+              <span class="num-unit">s</span>
+            </span>
+          </div>
+          <div class="row">
+            <label for="sFilter">Brillo</label>
+            <input id="sFilter" type="range" min="1200" max="6000" value="3200" step="50">
+            <span class="num-wrap">
+              <input class="num-input" id="nFilter" type="text" inputmode="numeric" value="3200">
+              <span class="num-unit">Hz</span>
+            </span>
+          </div>
+          <div class="row">
+            <label for="sDelay">Retardo</label>
+            <input id="sDelay" type="range" min="4" max="45" value="22" step="1">
+            <span class="num-wrap">
+              <input class="num-input" id="nDelay" type="text" inputmode="numeric" value="22">
+              <span class="num-unit">ms</span>
+            </span>
+          </div>
+        </div>
+      </details>
+
+      <button class="btn wide" id="btnPracticar" disabled>Practicar →</button>
+      <button class="btn ghost" id="btnReset">↻ Restablecer selección</button>
+    </section>
+
+    <section class="view" id="viewPractica">
+      <div class="panel pattern-panel">
+        <div class="pattern-anchor">
+          <button class="btn back" id="btnCambiar">← Cambiar</button>
+          <div class="pattern-left">
+            <div class="pattern" id="pattern"></div>
+          </div>
+          <div class="pattern-right">
+            <div class="pattern-title" id="patternTitlePractica">Patrón <b>—</b> — Compás <b>—</b></div>
+            <div class="pattern-info-line">
+              <span>Compás <b id="infoCompasNum">0</b></span>
+              <span>Acorde <b id="infoAcorde">—</b></span>
+              <span>BPM <b id="infoBpm">90</b></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="panelDiagramas">
+        <div class="diagrams" id="diagrams"></div>
+      </div>
+
+      <div class="transport">
+        <button class="btn transport" id="btnTocar">▶ Tocar</button>
+        <button class="btn transport" id="btnPausa">⏸ Pausar</button>
+        <button class="btn transport" id="btnParar">⏹ Parar</button>
+        <button class="btn metro" id="btnMetro">🔕 Metrónomo</button>
+      </div>
+
+      <div class="panel">
+        <div class="sliders-compact">
+          <div class="row">
+            <label for="sBpm">Velocidad</label>
+            <input id="sBpm" type="range" min="40" max="220" value="90" step="1">
+            <span class="num-wrap">
+              <input class="num-input" id="nBpm" type="text" inputmode="numeric" value="90">
+              <span class="num-unit">BPM</span>
+            </span>
+          </div>
+          <div class="row">
+            <label for="sVol">Volumen</label>
+            <input id="sVol" type="range" min="0" max="100" value="70" step="1">
+            <span class="num-wrap">
+              <input class="num-input" id="nVol" type="text" inputmode="numeric" value="70">
+              <span class="num-unit">%</span>
+            </span>
+          </div>
+          <div class="row">
+            <label for="sBajo">Bajo</label>
+            <input id="sBajo" type="range" min="0" max="100" value="85" step="1">
+            <span class="num-wrap">
+              <input class="num-input" id="nBajo" type="text" inputmode="numeric" value="85">
+              <span class="num-unit">%</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="sliders-compact">
+          <div class="repeticiones-row">
+            <label for="inpReps">Repeticiones</label>
+            <input class="reps-input" id="inpReps" type="number" min="0" max="999" value="0">
+            <span class="reps-status" id="repsStatus">∞</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+<div class="status-samples" id="statusSamples">Cargando samples...</div>
+
+<script>
+/* ============================================================
+   DATOS
+   ============================================================ */
+const TUNINGS = {
+  reentrante: { freqs:[220.00,293.66,369.99,246.94], openNotes:[9,2,6,11] }
+};
+const TUNING = TUNINGS.reentrante;
+
+const RAICES = ['Do','Do#/Reb','Re','Re#/Mib','Mi','Fa','Fa#/Solb','Sol','Sol#/Lab','La','La#/Sib','Si'];
+const ordenTipos = ['Mayor','séptima','menor','aumentado','semidisminuido','disminuido séptima','séptima con cuarta suspendida','séptima con novena menor','séptima con novena mayor'];
+
+const VOICINGS = [];
+function V(r,t,c,tr,d,b){ VOICINGS.push({r,t,c,tr,d,b:b||null}); }
+V('Do','Mayor','C',[3,2,1,1],[3,2,1,1],{cuerdas:[1,2],traste:1,dedo:1});
+V('Do','séptima','C7',[1,2,1,1],[1,2,1,1],{cuerdas:[1,2,3,4],traste:1,dedo:1});
+V('Do','menor','Cm',[3,1,1,1],[3,1,1,1],{cuerdas:[1,2,3,4],traste:1,dedo:1});
+V('Do','aumentado','Caug',[3,2,2,1],[4,2,3,1]);
+V('Do','semidisminuido','Cø',[1,1,0,1],[1,2,0,3]);
+V('Do','disminuido séptima','Co7',[0,1,0,1],[0,1,0,2]);
+V('Do','séptima con cuarta suspendida','C7sus4',[1,3,1,1],[1,3,1,1],{cuerdas:[1,2,3,4],traste:1,dedo:1});
+V('Do','séptima con novena menor','C7b9',[1,2,1,2],[1,3,2,4]);
+V('Do','séptima con novena mayor','C7(9)',[1,2,1,3],[1,3,2,4],{cuerdas:[1,2,3,4],traste:1,dedo:1});
+V('Do#/Reb','Mayor','C#/Db',[4,3,2,2],[3,2,1,1],{cuerdas:[1,2],traste:2,dedo:1});
+V('Do#/Reb','séptima','C#7/Db7',[2,3,2,2],[1,2,1,1],{cuerdas:[1,2,3,4],traste:2,dedo:1});
+V('Do#/Reb','menor','C#m/Dbm',[4,2,2,2],[3,1,1,1],{cuerdas:[1,2,3,4],traste:2,dedo:1});
+V('Do#/Reb','aumentado','C#aug/Dbaug',[4,3,3,2],[4,2,3,1]);
+V('Do#/Reb','semidisminuido','C#ø/Dbø',[2,2,1,2],[3,2,1,4]);
+V('Do#/Reb','disminuido séptima','C#o7/Dbo7',[1,2,1,2],[1,3,2,4]);
+V('Do#/Reb','séptima con cuarta suspendida','C#7sus4/Db7sus4',[2,4,2,2],[1,3,1,1],{cuerdas:[1,2,3,4],traste:2,dedo:1});
+V('Do#/Reb','séptima con novena menor','C#7b9/Db7b9',[2,3,2,3],[1,3,2,4]);
+V('Do#/Reb','séptima con novena mayor','C#7(9)/Db7(9)',[2,3,2,4],[1,3,2,4],{cuerdas:[1,2,3,4],traste:2,dedo:1});
+V('Re','Mayor','D',[0,0,0,3],[0,0,0,4]);
+V('Re','séptima','D7',[0,0,0,1],[0,0,0,1]);
+V('Re','menor','Dm',[0,3,3,3],[0,2,3,4]);
+V('Re','aumentado','Daug',[1,0,0,3],[1,0,0,4]);
+V('Re','semidisminuido','Dø',[3,3,2,3],[3,2,1,4]);
+V('Re','disminuido séptima','Dº7',[2,3,2,3],[1,3,2,4]);
+V('Re','séptima con cuarta suspendida','D7sus4',[0,0,1,1],[0,0,1,2]);
+V('Re','séptima con novena menor','D7b9',[0,1,0,1],[0,1,0,2]);
+V('Re','séptima con novena mayor','D7(9)',[0,2,0,1],[0,2,0,1]);
+V('Re#/Mib','Mayor','D#/Eb',[1,1,1,4],[1,1,1,4],{cuerdas:[1,2,3,4],traste:1,dedo:1});
+V('Re#/Mib','séptima','D#7/Eb7',[1,1,1,2],[1,2,3,4]);
+V('Re#/Mib','menor','D#m/Ebm',[6,4,4,4],[3,1,1,1],{cuerdas:[1,2,3,4],traste:4,dedo:1});
+V('Re#/Mib','aumentado','D#aug/Ebaug',[2,1,1,4],[2,1,1,4],{cuerdas:[2,3],traste:1,dedo:1});
+V('Re#/Mib','semidisminuido','D#ø/Ebø',[0,1,0,2],[0,1,0,2]);
+V('Re#/Mib','disminuido séptima','D#o7/Ebo7',[0,1,0,1],[0,1,0,2]);
+V('Re#/Mib','séptima con cuarta suspendida','D#7sus4/Eb7sus4',[1,1,2,2],[1,2,3,4]);
+V('Re#/Mib','séptima con novena menor','D#7b9/Eb7b9',[1,2,1,2],[1,3,2,4]);
+V('Re#/Mib','séptima con novena mayor','D#7(9)/Eb7(9)',[1,3,1,2],[1,3,1,2],{cuerdas:[1,2,3,4],traste:1,dedo:1});
+V('Mi','Mayor','E',[2,2,2,0],[2,3,4,0]);
+V('Mi','séptima','E7',[2,2,2,3],[1,2,3,4]);
+V('Mi','menor','Em',[2,2,1,0],[2,3,1,0]);
+V('Mi','aumentado','Eaug',[3,2,2,5],[2,3,4,1],{cuerdas:[2,3],traste:2,dedo:1});
+V('Mi','semidisminuido','Eø',[1,2,1,3],[1,2,1,4]);
+V('Mi','disminuido séptima','Eo7',[1,2,1,2],[1,3,2,4]);
+V('Mi','séptima con cuarta suspendida','E7sus4',[2,2,3,3],[1,2,3,4]);
+V('Mi','séptima con novena menor','E7b9',[2,3,2,3],[1,3,2,4]);
+V('Mi','séptima con novena mayor','E7(9)',[2,4,2,3],[1,3,1,2],{cuerdas:[1,2,3,4],traste:2,dedo:1});
+V('Fa','Mayor','F',[0,3,3,1],[0,2,3,1]);
+V('Fa','séptima','F7',[3,3,3,4],[1,2,3,4]);
+V('Fa','menor','Fm',[3,3,2,1],[3,4,2,1],{cuerdas:[1,2,3,4],traste:1,dedo:1});
+V('Fa','aumentado','Faug',[0,3,3,2],[0,3,4,1]);
+V('Fa','semidisminuido','Fø',[2,3,2,4],[1,2,1,4]);
+V('Fa','disminuido séptima','Fo7',[2,3,2,3],[1,3,2,4]);
+V('Fa','séptima con cuarta suspendida','F7sus4',[3,3,4,4],[1,2,3,4]);
+V('Fa','séptima con novena menor','F7b9',[3,4,3,4],[1,3,2,4]);
+V('Fa','séptima con novena mayor','F7(9)',[3,5,3,4],[1,3,1,2],{cuerdas:[1,2,3,4],traste:3,dedo:1});
+V('Fa#/Solb','Mayor','F#/Gb',[4,4,4,2],[2,3,4,1]);
+V('Fa#/Solb','séptima','F#7/Gb7',[1,2,0,2],[1,2,0,3]);
+V('Fa#/Solb','menor','F#m/Gbm',[0,4,3,2],[0,3,2,1]);
+V('Fa#/Solb','aumentado','F#aug/Gbaug',[1,4,4,3],[1,3,4,2]);
+V('Fa#/Solb','semidisminuido','F#ø/Gbø',[0,2,0,1],[0,2,0,1]);
+V('Fa#/Solb','disminuido séptima','F#o7/Gbo7',[0,1,0,1],[0,1,0,2]);
+V('Fa#/Solb','séptima con cuarta suspendida','F#7sus4/Gb7sus4',[2,2,0,2],[1,2,0,3]);
+V('Fa#/Solb','séptima con novena menor','F#7b9/Gb7b9',[1,2,1,2],[1,3,2,4]);
+V('Fa#/Solb','séptima con novena mayor','F#7(9)/Gb7(9)',[1,2,2,2],[1,2,3,4]);
+V('Sol','Mayor','G',[2,0,1,0],[2,0,1,0]);
+V('Sol','séptima','G7',[2,3,1,3],[2,3,1,4]);
+V('Sol','menor','Gm',[1,0,1,3],[1,0,2,4]);
+V('Sol','aumentado','Gaug',[2,1,1,0],[2,1,1,0],{cuerdas:[2,3],traste:1,dedo:1});
+V('Sol','semidisminuido','Gø',[1,3,1,2],[1,3,1,2],{cuerdas:[1,2,3,4],traste:1,dedo:1});
+V('Sol','disminuido séptima','Go7',[1,2,1,2],[1,3,2,4]);
+V('Sol','séptima con cuarta suspendida','G7sus4',[3,3,1,3],[2,3,1,4]);
+V('Sol','séptima con novena menor','G7b9',[2,3,2,3],[1,3,2,4]);
+V('Sol','séptima con novena mayor','G7(9)',[2,3,3,3],[1,2,3,4]);
+V('Sol#/Lab','Mayor','G#/Ab',[3,1,2,1],[3,1,2,1],{cuerdas:[1,2,3,4],traste:1,dedo:1});
+V('Sol#/Lab','séptima','G#7/Ab7',[3,4,2,4],[2,3,1,4]);
+V('Sol#/Lab','menor','G#m/Abm',[2,1,2,0],[2,1,3,0]);
+V('Sol#/Lab','aumentado','G#aug/Abaug',[3,2,2,1],[4,2,3,1]);
+V('Sol#/Lab','semidisminuido','G#ø/Abø',[2,4,2,3],[1,3,1,2],{cuerdas:[1,2,3,4],traste:2,dedo:1});
+V('Sol#/Lab','disminuido séptima','G#o7/Abo7',[2,3,2,3],[1,3,2,4]);
+V('Sol#/Lab','séptima con cuarta suspendida','G#7sus4/Ab7sus4',[4,4,2,4],[2,3,1,4]);
+V('Sol#/Lab','séptima con novena menor','G#7b9/Ab7b9',[3,4,3,4],[1,3,2,4]);
+V('Sol#/Lab','séptima con novena mayor','G#7(9)/Ab7(9)',[3,4,4,4],[1,2,3,4]);
+V('La','Mayor','A',[0,2,3,2],[0,1,3,2]);
+V('La','séptima','A7',[0,2,1,2],[0,2,1,3]);
+V('La','menor','Am',[0,2,3,1],[0,2,3,1]);
+V('La','aumentado','Aaug',[0,3,3,2],[0,2,3,1]);
+V('La','semidisminuido','Aø',[0,1,1,1],[0,1,2,3]);
+V('La','disminuido séptima','Ao7',[0,1,0,1],[0,1,0,2]);
+V('La','séptima con cuarta suspendida','A7sus4',[0,2,1,3],[0,2,1,4]);
+V('La','séptima con novena menor','A7b9',[1,2,1,2],[1,3,2,4]);
+V('La','séptima con novena mayor','A7(9)',[2,2,1,2],[2,3,1,4]);
+V('La#/Sib','Mayor','A#/Bb',[5,3,4,3],[3,1,2,1],{cuerdas:[1,2,3,4],traste:3,dedo:1});
+V('La#/Sib','séptima','A#7/Bb7',[1,3,2,3],[1,3,2,4]);
+V('La#/Sib','menor','A#m/Bbm',[1,3,4,2],[1,3,4,2],{cuerdas:[1,2,3,4],traste:1,dedo:1});
+V('La#/Sib','aumentado','A#aug/Bbaug',[5,4,4,3],[4,2,3,1]);
+V('La#/Sib','semidisminuido','A#ø/Bbø',[1,2,2,2],[1,2,3,4]);
+V('La#/Sib','disminuido séptima','A#o7/Bbo7',[1,2,1,2],[1,3,2,4]);
+V('La#/Sib','séptima con cuarta suspendida','A#7sus4/Bb7sus4',[1,3,2,4],[1,3,2,4]);
+V('La#/Sib','séptima con novena menor','A#7b9/Bb7b9',[2,3,2,3],[1,3,2,4]);
+V('La#/Sib','séptima con novena mayor','A#7(9)/Bb7(9)',[3,3,2,3],[2,3,1,4]);
+V('Si','Mayor','B',[2,1,0,0],[2,1,0,0]);
+V('Si','séptima','B7',[0,1,0,0],[0,1,0,0]);
+V('Si','menor','Bm',[2,0,0,0],[2,0,0,0]);
+V('Si','aumentado','Baug',[2,1,1,4],[2,1,1,4],{cuerdas:[2,3],traste:1,dedo:1});
+V('Si','semidisminuido','Bø',[2,3,3,3],[1,2,3,4]);
+V('Si','disminuido séptima','Bo7',[2,3,2,3],[1,3,2,4]);
+V('Si','séptima con cuarta suspendida','B7sus4',[0,2,0,0],[0,2,0,0]);
+V('Si','séptima con novena menor','B7b9',[0,1,0,1],[0,1,0,2]);
+V('Si','séptima con novena mayor','B7(9)',[0,1,0,2],[0,1,0,3]);
+
+const PROGRESIONES_MAYORES = {
+  P1:{labelBold:'Progresión 1',labelLight:' (P1): V7 - I',grados:['V7','I']},
+  P2:{labelBold:'Progresión 2',labelLight:' (P2): IIm - V7 - I',grados:['IIm','V7','I']},
+  P3:{labelBold:'Progresión 3',labelLight:' (P3): VI7 - IIm - V7 - I',grados:['VI7','IIm','V7','I']},
+  P4:{labelBold:'Progresión 4',labelLight:' (P4): IV - V7 - I',grados:['IV','V7','I']},
+  P5:{labelBold:'Progresión 5',labelLight:' (P5): I7 - IV - V7 - I',grados:['I7','IV','V7','I']},
+  P6:{labelBold:'Progresión 6',labelLight:' (P6): IV - I - V7 - I',grados:['IV','I','V7','I']},
+  P6_1:{labelBold:'Progresión 6.1',labelLight:' (P6.1): IV - IVm - I - VI7 - IIm - V7 - I',grados:['IV','IVm','I','VI7','IIm','V7','I']},
+  P7:{labelBold:'Progresión 7',labelLight:' (P7): I7 - IV - I - V7 - I',grados:['I7','IV','I','V7','I']},
+  P7_1:{labelBold:'Progresión 7.1',labelLight:' (P7.1): I7 - IV - IVm - I - VI7 - IIm - V7 - I',grados:['I7','IV','IVm','I','VI7','IIm','V7','I']}
+};
+const PROGRESIONES_MENORES = {
+  P1m:{labelBold:'Progresión 1m',labelLight:' (P1m): V7 - Im',grados:['V7','Im']},
+  P2m:{labelBold:'Progresión 2m',labelLight:' (P2m): IIø – V7 – Im',grados:['IIo','V7','Im']},
+  P3m:{labelBold:'Progresión 3m',labelLight:' (P3m): No aplica',grados:[],noAplica:true},
+  P4m:{labelBold:'Progresión 4m',labelLight:' (P4m): IVm - V7 - Im',grados:['IVm','V7','Im']},
+  P5m:{labelBold:'Progresión 5m',labelLight:' (P5m): I7 - IVm - Im – V7 – Im',grados:['I7','IVm','Im','V7','Im']},
+  P6m:{labelBold:'Progresión 6m',labelLight:' (P6m): IVm – Im - V7 – Im',grados:['IVm','Im','V7','Im']},
+  P7m:{labelBold:'Progresión 7m',labelLight:' (P7m): I7 - IVm - Im - V7 - Im',grados:['I7','IVm','Im','V7','Im']},
+  P6_1m:{labelBold:'Progresión 6.1m',labelLight:' (P6.1m): IVm - VIIb7 - IIIb - VIb - IIø - V7 - Im',grados:['IVm','VIIb7','IIIb','VIb','IIo','V7','Im']},
+  P7_1m:{labelBold:'Progresión 7.1m',labelLight:' (P7.1m): I7 - IVm - VIIb7 - IIIb - VIb - IIø - V7 - Im',grados:['I7','IVm','VIIb7','IIIb','VIb','IIo','V7','Im']}
+};
+const PROGRESIONES_OTRAS = {
+  O1:{labelBold:'Otra progresión 1',labelLight:' (O1): I - IV - IIm - V7 - I',grados:['I','IV','IIm','V7','I']},
+  O2:{labelBold:'Otra progresión 2',labelLight:' (O2): I - V7 - IV - IIm - I',grados:['I','V7','IV','IIm','I']},
+  O3:{labelBold:'Otra progresión 3',labelLight:' (O3): IV - I - V7 - IIm - I',grados:['IV','I','V7','IIm','I']}
+};
+
+const COMPASES_ORDEN = ['2/4','3/4','4/4','5/8','6/8'];
+
+/* Notación de celdas:
+   - Flechas: ↓ (bajar) ↑ (subir)
+   - Letras:  b = ↓, s = ↑
+   - Modificadores: r (rasgueo), x (chasquido), a (apagado), > (acento)
+   - Guion: — o – (silencia / extiende la celda previa a 2 corcheas)
+   - Dos golpes en una corchea: bs, sb (se subdivide la corchea en 2 semicorcheas) */
+const PRAS = [
+  { compas:'5/8', nombre:'PRA - 5/8 - 1', celdas:['↓','↑','↓','↑','↓'] },
+  { compas:'5/8', nombre:'PRA - 5/8 - 2', celdas:['↓x','↑','↓','↑x','↓'] },
+  { compas:'5/8', nombre:'PRA - 5/8 - 3', celdas:['ba','s','b','sx','br'] },
+  { compas:'3/4', nombre:'PRA - 3/4 - 1', celdas:['↓','↑','—','↑','↓','—'] },
+  { compas:'3/4', nombre:'PRA - 3/4 - 2', celdas:['↓','↑','↓x','↑','↓','↑x'] },
+  { compas:'3/4', nombre:'PRA - 3/4 - 3', celdas:['↓r','↑','↓x','↑','↓','↑x'] },
+  { compas:'3/4', nombre:'PRA - 3/4 - 4', celdas:['b','b','sx','b','b','sx'] },
+  { compas:'6/8', nombre:'PRA - 6/8 - 1', celdas:['↓x','↑','↓','↑x','↓','↑'] }
+];
+
+const REPIQUES = [
+  { compas:'5/8', nombre:'Repique - 5/8 - 1', celdas:['↓','—','↓','—','↓'] },
+  { compas:'5/8', nombre:'Repique - 5/8 - 2', celdas:['↓','↓','—','↓','↓'] },
+  { compas:'5/8', nombre:'Repique - 5/8 - 3', celdas:['b','b','—','bs','bs'] },
+  { compas:'3/4', nombre:'Repique - 3/4 - 1', celdas:['b','—','b','—','b','—'] }
+];
+
+function compasesDisponibles() {
+  const set = new Set();
+  PRAS.forEach(p => set.add(p.compas));
+  REPIQUES.forEach(r => set.add(r.compas));
+  return COMPASES_ORDEN.filter(c => set.has(c));
+}
+
+const SEMITONO_RAIZ = {'Do':0,'Do#/Reb':1,'Re':2,'Re#/Mib':3,'Mi':4,'Fa':5,'Fa#/Solb':6,'Sol':7,'Sol#/Lab':8,'La':9,'La#/Sib':10,'Si':11};
+const GRADO_A_SEMITONO = {'I':0,'Im':0,'IIm':2,'IIo':2,'IIIb':3,'IIIm':4,'IV':5,'IVm':5,'V':7,'V7':7,'VI':9,'VIb':8,'VIm':9,'VI7':9,'VIIb7':10};
+const GRADO_A_TIPO = {'I':'Mayor','Im':'menor','I7':'séptima','IIm':'menor','IIo':'semidisminuido','IIIb':'Mayor','IIIm':'menor','IV':'Mayor','IVm':'menor','V':'Mayor','V7':'séptima','VI':'Mayor','VIb':'Mayor','VIm':'menor','VI7':'séptima','VIIb7':'séptima'};
+
+function distribuirEnFilas(n) {
+  if (n <= 5) return [n];
+  const arriba = Math.floor(n / 2);
+  const abajo  = Math.ceil(n / 2);
+  return [arriba, abajo];
+}
+
+/* Normaliza letras a flechas */
+function normalizarCelda(c) {
+  return c.replace(/b/g, '↓').replace(/s/g, '↑');
+}
+
+/* Un solo golpe: devuelve objeto gesto/efecto */
+function parsearGolpeSimple(flecha, modificador, acentoStr) {
+  const acento = acentoStr === '>';
+  if (modificador === 'x') {
+    const efecto = flecha === '↑' ? 'chasquido-arriba' : 'chasquido-abajo';
+    return { tipo:'efecto', efecto, flecha, acento };
+  }
+  if (modificador === 'a') return { tipo:'efecto', efecto:'apagado', flecha, acento };
+  return { tipo:'gesto', flecha, rasgueo: modificador === 'r', acento };
+}
+
+/* Parsea una celda: puede ser silencio, un golpe o dos golpes */
+function parsearCelda(celda) {
+  if (celda === '—' || celda === '–') return { tipo:'silencio' };
+  const c = normalizarCelda(celda);
+
+  // Dos golpes seguidos dentro de la misma corchea (dos semicorcheas)
+  const mDoble = c.match(/^([↓↑])([rax]?)(>?)([↓↑])([rax]?)(>?)$/);
+  if (mDoble) {
+    return {
+      tipo:'doble',
+      golpes: [
+        parsearGolpeSimple(mDoble[1], mDoble[2], mDoble[3]),
+        parsearGolpeSimple(mDoble[4], mDoble[5], mDoble[6])
+      ]
+    };
+  }
+
+  // Un solo golpe
+  const m = c.match(/^([↓↑])([rax]?)(>?)$/);
+  if (!m) return { tipo:'error', celda };
+  return parsearGolpeSimple(m[1], m[2], m[3]);
+}
+
+/* Convierte array de celdas en eventos.
+   - Cada celda ocupa 1 corchea, salvo que sea "doble" (2 golpes) → 2 eventos de 0.5 corcheas.
+   - Un golpe seguido de "—" se extiende a 2 corcheas (comportamiento original). */
+function parsearPatron(celdas) {
+  const eventos = [];
+  for (let i = 0; i < celdas.length; i++) {
+    const celda = celdas[i];
+    const sigEsGuion = celdas[i+1] === '—' || celdas[i+1] === '–';
+    if (celda === '—' || celda === '–') {
+      eventos.push({ tipo:'silencio', corcheas:1, celdas:[i] });
+      continue;
+    }
+    const g = parsearCelda(celda);
+
+    if (g.tipo === 'doble') {
+      eventos.push({ ...g.golpes[0], corcheas:0.5, celdas:[i] });
+      eventos.push({ ...g.golpes[1], corcheas:0.5, celdas:[i] });
+      continue;
+    }
+
+    if (sigEsGuion && g.tipo !== 'silencio' && g.tipo !== 'error') {
+      eventos.push({ ...g, corcheas:2, celdas:[i, i+1] });
+      i++;
+    } else {
+      eventos.push({ ...g, corcheas:1, celdas:[i] });
+    }
+  }
+  return eventos;
+}
+
+/* ============================================================
+   AUDIO
+   ============================================================ */
+let ctx, masterGain, comp, metroBus, fxBus, bajoBus;
+const activeSources = new Set();
+let volumen = 0.70;
+let volumenBajo = 0.85;
+const LS_METRO = 'rasgueo.metronomo.v1';
+const LS_DELAYS = 'rasgueo.delays.v1';
+
+const RUTAS_SAMPLES = {
+  'c1-aire': 'samples/c1-aire.mp3',
+  'c1-t4':   'samples/c1-t4.mp3',
+  'c2-aire': 'samples/c2-aire.mp3',
+  'c2-t4':   'samples/c2-t4.mp3',
+  'c3-aire': 'samples/c3-aire.mp3',
+  'c3-t4':   'samples/c3-t4.mp3',
+  'c4-aire': 'samples/c4-aire.mp3',
+  'c4-t4':   'samples/c4-t4.mp3',
+  'apagado':          'samples/apagado.mp3',
+  'chasquido-abajo':  'samples/chasquido-descendente.mp3',
+  'chasquido-arriba': 'samples/chasquido-ascendente.mp3'
+};
+
+const SAMPLES = {};
+let samplesCargados = 0;
+let _metroNoiseBuf = null;
+
+let DELAYS = { golpe: 4, rasgueo: 35 };
+try {
+  const raw = localStorage.getItem(LS_DELAYS);
+  if (raw) DELAYS = { ...DELAYS, ...JSON.parse(raw) };
+} catch (e) {}
+
+function limpiarBuffer(buf) {
+  const sr = buf.sampleRate;
+  const data = buf.getChannelData(0);
+  const n = data.length;
+  let pico = 0;
+  for (let i = 0; i < n; i++) { const a = Math.abs(data[i]); if (a > pico) pico = a; }
+  if (pico === 0) return buf;
+  const umbral = pico * 0.05;
+  let i0 = 0;
+  for (let i = 0; i < n; i++) { if (Math.abs(data[i]) > umbral) { i0 = i; break; } }
+  let i1 = n - 1;
+  for (let i = n - 1; i >= 0; i--) { if (Math.abs(data[i]) > umbral) { i1 = i; break; } }
+  const margenAntes = Math.floor(sr * 0.010);
+  const margenDespues = Math.floor(sr * 0.060);
+  i0 = Math.max(0, i0 - margenAntes);
+  i1 = Math.min(n - 1, i1 + margenDespues);
+  const nuevaLen = i1 - i0 + 1;
+  if (nuevaLen <= 0 || nuevaLen >= n) return buf;
+  const nuevo = ctx.createBuffer(buf.numberOfChannels, nuevaLen, sr);
+  for (let c = 0; c < buf.numberOfChannels; c++) {
+    const orig = buf.getChannelData(c);
+    const dest = nuevo.getChannelData(c);
+    for (let i = 0; i < nuevaLen; i++) dest[i] = orig[i0 + i];
+  }
+  const fade = Math.min(Math.floor(sr * 0.030), nuevaLen);
+  for (let c = 0; c < buf.numberOfChannels; c++) {
+    const dest = nuevo.getChannelData(c);
+    for (let i = 0; i < fade; i++) dest[nuevaLen - 1 - i] *= i / fade;
+  }
+  return nuevo;
+}
+
+function esEfectoPercusivo(nombre) {
+  return nombre === 'apagado' || nombre === 'chasquido-abajo' || nombre === 'chasquido-arriba';
+}
+
+async function cargarSamples() {
+  const status = document.getElementById('statusSamples');
+  let ok = 0, fail = 0;
+  const entradas = Object.entries(RUTAS_SAMPLES);
+  await Promise.all(entradas.map(async ([nombre, ruta]) => {
+    try {
+      const resp = await fetch(ruta);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const arr = await resp.arrayBuffer();
+      let buf = await ctx.decodeAudioData(arr);
+      if (esEfectoPercusivo(nombre)) buf = limpiarBuffer(buf);
+      SAMPLES[nombre] = buf;
+      ok++;
+    } catch (e) { fail++; }
+  }));
+  samplesCargados = ok;
+  if (ok === entradas.length) {
+    status.textContent = `Samples cargados (${ok}/${entradas.length})`;
+    status.className = 'status-samples ok';
+  } else if (ok > 0) {
+    status.textContent = `Samples parciales (${ok}/${entradas.length})`;
+    status.className = 'status-samples warn';
+  } else {
+    status.textContent = 'Sin samples. Usando síntesis Karplus-Strong.';
+    status.className = 'status-samples warn';
+  }
+  setTimeout(() => { status.style.display = 'none'; }, 3000);
+}
+
+function initAudio() {
+  if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = ctx.createGain();
+  masterGain.gain.value = volumen;
+  comp = ctx.createDynamicsCompressor();
+  comp.threshold.value = -14; comp.knee.value = 24; comp.ratio.value = 3;
+  comp.attack.value = 0.004; comp.release.value = 0.18;
+  masterGain.connect(comp).connect(ctx.destination);
+  fxBus = ctx.createGain(); fxBus.gain.value = volumen; fxBus.connect(ctx.destination);
+  metroBus = ctx.createGain(); metroBus.gain.value = volumen; metroBus.connect(ctx.destination);
+  bajoBus = ctx.createGain(); bajoBus.gain.value = volumenBajo; bajoBus.connect(ctx.destination);
+  cargarSamples();
+}
+
+function makeKSBuffer(freq, decayS, attackMs) {
+  const sr = ctx.sampleRate;
+  const N = Math.max(2, Math.round(sr / freq));
+  const dur = decayS + 0.30;
+  const len = Math.max(N * 2, Math.floor(sr * dur));
+  const data = new Float32Array(len);
+  const loopIters = Math.max(1, sr * decayS / N);
+  const damp = Math.pow(0.001, 1 / loopIters);
+  const delay = new Float32Array(N);
+  let prev = 0;
+  for (let i = 0; i < N; i++) { const r = Math.random() * 2 - 1; prev = prev * 0.85 + r * 0.15; delay[i] = prev; }
+  let maxAbs = 0;
+  for (let i = 0; i < N; i++) maxAbs = Math.max(maxAbs, Math.abs(delay[i]));
+  if (maxAbs > 0) for (let i = 0; i < N; i++) delay[i] /= maxAbs * 2;
+  let idx = 0;
+  for (let i = 0; i < len; i++) {
+    const cur = delay[idx]; const nxt = delay[(idx + 1) % N];
+    delay[idx] = (cur + nxt) * 0.5 * damp; data[i] = cur;
+    idx = (idx + 1) % N;
+  }
+  const atk = Math.min(Math.floor(sr * attackMs / 1000), len);
+  for (let i = 0; i < atk; i++) { const t = i / atk; data[i] *= t*t*(3-2*t); }
+  const fi = Math.min(50, len); for (let i = 0; i < fi; i++) data[i] *= i / fi;
+  const fo = Math.min(Math.floor(sr * 0.12), len); for (let i = 0; i < fo; i++) data[len-1-i] *= i / fo;
+  const buf = ctx.createBuffer(1, len, sr); buf.getChannelData(0).set(data); return buf;
+}
+
+function makeKSBufferBajo(freq, durS) {
+  const sr = ctx.sampleRate;
+  const N = Math.max(2, Math.round(sr / freq));
+  const len = Math.max(N * 2, Math.floor(sr * durS));
+  const data = new Float32Array(len);
+  const loopIters = Math.max(1, sr * durS / N);
+  const damp = Math.pow(0.001, 1 / loopIters);
+  const delay = new Float32Array(N);
+  let prev = 0;
+  for (let i = 0; i < N; i++) {
+    const r = Math.random() * 2 - 1;
+    prev = prev * 0.75 + r * 0.25;
+    delay[i] = prev;
+  }
+  let maxAbs = 0;
+  for (let i = 0; i < N; i++) maxAbs = Math.max(maxAbs, Math.abs(delay[i]));
+  if (maxAbs > 0) for (let i = 0; i < N; i++) delay[i] /= maxAbs * 2;
+  let idx = 0;
+  for (let i = 0; i < len; i++) {
+    const cur = delay[idx];
+    const nxt = delay[(idx + 1) % N];
+    delay[idx] = (cur + nxt) * 0.5 * damp;
+    data[i] = cur;
+    idx = (idx + 1) % N;
+  }
+  const atk = Math.min(Math.floor(sr * 0.003), len);
+  for (let i = 0; i < atk; i++) {
+    const t = i / atk;
+    data[i] *= t * t * (3 - 2 * t);
+  }
+  const fi = Math.min(50, len);
+  for (let i = 0; i < fi; i++) data[i] *= i / fi;
+  const fo = Math.min(Math.floor(sr * 0.06), len);
+  for (let i = 0; i < fo; i++) data[len - 1 - i] *= i / fo;
+  const buf = ctx.createBuffer(1, len, sr);
+  buf.getChannelData(0).set(data);
+  return buf;
+}
+
+function playStringKS(freq, gainScale, when, params) {
+  const buf = makeKSBuffer(freq, params.decay, params.attack);
+  const dur = params.decay + 0.30;
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=params.filter; lp.Q.value=0.7;
+  const g = ctx.createGain(); g.gain.value = 0.30 * gainScale;
+  src.connect(lp).connect(g).connect(masterGain);
+  src.start(when); src.stop(when + dur);
+  const node = { src, gain: g }; activeSources.add(node); src.onended = () => activeSources.delete(node);
+}
+
+function elegirSampleCuerda(idx, traste) {
+  const cuerda = idx + 1;
+  if (traste === 0) {
+    const nombre = `c${cuerda}-aire`;
+    if (!SAMPLES[nombre]) return null;
+    return { nombre, pitchRate: 1.0 };
+  }
+  const nombre = `c${cuerda}-t4`;
+  if (!SAMPLES[nombre]) return null;
+  const semitonos = traste - 4;
+  return { nombre, pitchRate: Math.pow(2, semitonos / 12) };
+}
+
+function playSample(nombre, when, { gainScale = 1.0, pitchRate = 1.0, acento = false, esEfecto = false } = {}) {
+  const buf = SAMPLES[nombre];
+  if (!buf) return false;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.playbackRate.value = pitchRate;
+  const g = ctx.createGain();
+  g.gain.value = gainScale * (acento ? 1.4 : 1.0);
+  if (esEfecto) {
+    src.connect(g).connect(fxBus);
+  } else {
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 8000; lp.Q.value = 0.7;
+    src.connect(lp).connect(g).connect(masterGain);
+  }
+  src.start(when);
+  const node = { src, gain: g }; activeSources.add(node); src.onended = () => activeSources.delete(node);
+  return true;
+}
+
+function tocarGesto(flecha, voicing, when, { rasgueo = false, acento = false } = {}) {
+  const trastes = voicing.tr;
+  const indices = flecha === '↑' ? [0,1,2,3] : [3,2,1,0];
+  const delayMs = rasgueo ? DELAYS.rasgueo : DELAYS.golpe;
+  const stepS = delayMs / 1000;
+  const hayTodosLosSamples = indices.every(idx => elegirSampleCuerda(idx, trastes[idx]) !== null);
+  const t0 = rasgueo ? when - 0.025 : when;
+  indices.forEach((idx, i) => {
+    const traste = trastes[idx];
+    const t = t0 + i * stepS;
+    if (!hayTodosLosSamples) {
+      const cuerda = TUNING.freqs[idx];
+      const freq = cuerda * Math.pow(2, traste / 12);
+      playStringKS(freq, acento ? 1.4 : 1.0, t, {
+        decay: parseFloat(sDecay.value), filter: parseInt(sFilter.value,10), attack: 6
+      });
+      return;
+    }
+    const eleccion = elegirSampleCuerda(idx, traste);
+    playSample(eleccion.nombre, t, { gainScale: 1.0, pitchRate: eleccion.pitchRate, acento, esEfecto: false });
+  });
+}
+
+function tocarEfecto(nombre, when, { acento = false } = {}) {
+  if (!SAMPLES[nombre]) {
+    const osc = ctx.createOscillator(); osc.type='square'; osc.frequency.value=1200;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.001, when);
+    g.gain.linearRampToValueAtTime(0.3, when + 0.001);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + 0.05);
+    osc.connect(g).connect(fxBus); osc.start(when); osc.stop(when + 0.06); return;
+  }
+  playSample(nombre, when, { gainScale: 0.3, pitchRate: 1.0, acento, esEfecto: true });
+}
+
+function tocarBajo(voicing, when, durCompas) {
+  const raizNombre = voicing.r;
+  const raizPc = SEMITONO_RAIZ[raizNombre] !== undefined ? SEMITONO_RAIZ[raizNombre] : 0;
+  const frecBase = 261.63 * Math.pow(2, raizPc / 12);
+  const frecObjetivo = frecBase / 4;
+
+  const buf = makeKSBufferBajo(frecObjetivo, durCompas);
+  const dur = durCompas + 0.05;
+
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = 800;
+  lp.Q.value = 0.7;
+
+  const body = ctx.createBiquadFilter();
+  body.type = 'peaking';
+  body.frequency.value = 120;
+  body.Q.value = 1;
+  body.gain.value = 4;
+
+  const g = ctx.createGain();
+  const peak = 0.9;
+  g.gain.setValueAtTime(0, when);
+  g.gain.linearRampToValueAtTime(peak, when + 0.003);
+
+  src.connect(lp).connect(body).connect(g).connect(bajoBus);
+  src.start(when);
+  src.stop(when + dur);
+
+  const node = { src, gain: g };
+  activeSources.add(node);
+  src.onended = () => activeSources.delete(node);
+}
+
+function releaseAll(fade = 0.09) {
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  activeSources.forEach(({ src, gain }) => {
+    try {
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(gain.gain.value, now);
+      gain.gain.linearRampToValueAtTime(0, now + fade);
+      src.stop(now + fade + 0.02);
+    } catch (e) {}
+  });
+}
+
+function getMetroNoiseBuffer() {
+  if (_metroNoiseBuf) return _metroNoiseBuf;
+  const nlen = Math.floor(ctx.sampleRate * 0.008);
+  const nb = ctx.createBuffer(1, nlen, ctx.sampleRate);
+  const nd = nb.getChannelData(0);
+  const tau = ctx.sampleRate * 0.0012;
+  for (let i = 0; i < nlen; i++) nd[i] = (Math.random() * 2 - 1) * Math.exp(-i / tau);
+  _metroNoiseBuf = nb;
+  return nb;
+}
+
+function scheduleMetro(when, isAccent) {
+  const f1 = isAccent ? 2400 : 1800;
+  const osc1 = ctx.createOscillator();
+  osc1.type = 'sine';
+  osc1.frequency.setValueAtTime(f1, when);
+  osc1.frequency.exponentialRampToValueAtTime(f1 * 0.7, when + 0.03);
+  const g1 = ctx.createGain();
+  const peak1 = isAccent ? 0.55 : 0.35;
+  g1.gain.setValueAtTime(0, when);
+  g1.gain.linearRampToValueAtTime(peak1, when + 0.001);
+  g1.gain.exponentialRampToValueAtTime(0.0001, when + 0.04);
+  osc1.connect(g1).connect(metroBus);
+  osc1.start(when); osc1.stop(when + 0.05);
+
+  const osc2 = ctx.createOscillator();
+  osc2.type = 'sine';
+  osc2.frequency.setValueAtTime(isAccent ? 800 : 600, when);
+  const g2 = ctx.createGain();
+  const peak2 = isAccent ? 0.22 : 0.14;
+  g2.gain.setValueAtTime(0, when);
+  g2.gain.linearRampToValueAtTime(peak2, when + 0.001);
+  g2.gain.exponentialRampToValueAtTime(0.0001, when + 0.025);
+  osc2.connect(g2).connect(metroBus);
+  osc2.start(when); osc2.stop(when + 0.03);
+
+  const ns = ctx.createBufferSource();
+  ns.buffer = getMetroNoiseBuffer();
+  const bp = ctx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = isAccent ? 2800 : 2200;
+  bp.Q.value = 3.5;
+  const ng = ctx.createGain();
+  ng.gain.value = isAccent ? 0.35 : 0.22;
+  ns.connect(bp).connect(ng).connect(metroBus);
+  ns.start(when); ns.stop(when + 0.015);
+}
+
+function generarSVG(c) {
+  if (!c || !c.trastes || c.trastes.length < 4) return '<svg viewBox="0 0 244 258" class="diagram-svg"></svg>';
+  const nFrets = 6, x0 = 52, dx = 32, yTop = 36, step = 32;
+  const xC = [0,1,2,3].map(i => x0 + i * dx);
+  const xDer = xC[3], yBot = yTop + nFrets * step, W = xDer + x0;
+  const rDot = 11, rOpen = 7.5, fsDedo = 14, fsBarra = 13, fsTraste = 11;
+  const grosor = [2.3, 1.7, 1.15, 1.6];
+  const yOpen = yTop - 16, H = yBot + 12;
+  let s = `<svg viewBox="0 0 ${W} ${H}" class="diagram-svg" preserveAspectRatio="xMidYMid meet">`;
+  s += `<line class="dg-nut" x1="${xC[0]}" y1="${yTop}" x2="${xDer}" y2="${yTop}" stroke-width="3.40" stroke-linecap="round"/>`;
+  for (let i = 1; i <= nFrets; i++) {
+    const y = yTop + i * step;
+    s += `<line class="dg-fret" x1="${xC[0]}" y1="${y}" x2="${xDer}" y2="${y}" stroke-width="1.20"/>`;
+  }
+  for (let i = 1; i <= nFrets; i++) {
+    const y = yTop + (i - 0.5) * step;
+    s += `<text class="dg-fretnum" x="${xC[0]-16}" y="${y}" font-size="${fsTraste}" text-anchor="end" dominant-baseline="central">${i}</text>`;
+  }
+  for (let i = 0; i < 4; i++) {
+    s += `<line class="dg-string" x1="${xC[i]}" y1="${yTop}" x2="${xC[i]}" y2="${yBot}" stroke-width="${grosor[i]}" stroke-linecap="round"/>`;
+  }
+  for (let i = 0; i < 4; i++) {
+    if (c.trastes[i] === 0) s += `<circle class="dg-open" cx="${xC[i]}" cy="${yOpen}" r="${rOpen}" stroke-width="1.9"/>`;
+  }
+  if (c.barra) {
+    const yB = yTop + c.barra.traste * step - step/2;
+    const idx = c.barra.cuerdas.map(n => 4 - n);
+    const xi = xC[Math.min(...idx)], xf = xC[Math.max(...idx)];
+    const pad = 9, h = 21;
+    s += `<rect class="dg-barra" x="${xi-pad}" y="${yB-h/2}" width="${xf-xi+2*pad}" height="${h}" rx="${h/2}" ry="${h/2}"/>`;
+    s += `<text class="dg-barra-txt" x="${(xi+xf)/2}" y="${yB}" font-size="${fsBarra}" font-weight="700" text-anchor="middle" dominant-baseline="central">${c.barra.dedo}</text>`;
+  }
+  for (let i = 0; i < 4; i++) {
+    const t = c.trastes[i];
+    const enBarra = c.barra && c.barra.traste === t && c.barra.cuerdas.includes(4 - i);
+    if (t > 0 && !enBarra) {
+      const y = yTop + t * step - step/2;
+      s += `<circle class="dg-dot" cx="${xC[i]}" cy="${y}" r="${rDot}"/>`;
+      s += `<text class="dg-dot-txt" x="${xC[i]}" y="${y}" font-size="${fsDedo}" font-weight="700" text-anchor="middle" dominant-baseline="central">${c.dedos[i]}</text>`;
+    }
+  }
+  s += `</svg>`;
+  return s;
+}
+
+function buscarVoicing(raiz, tipo) {
+  return VOICINGS.find(v => v.r === raiz && v.t === tipo) || null;
+}
+
+function getProgObj(cat) {
+  if (cat === 'mayores') return PROGRESIONES_MAYORES;
+  if (cat === 'menores') return PROGRESIONES_MENORES;
+  if (cat === 'otras')   return PROGRESIONES_OTRAS;
+  return null;
+}
+
+function calcularProgresion(progId, categoria, tonalidad) {
+  const obj = getProgObj(categoria);
+  const prog = obj && obj[progId];
+  if (!prog || !prog.grados.length) return [];
+  return prog.grados.map(grado => {
+    const offset = GRADO_A_SEMITONO[grado] || 0;
+    const tipo = GRADO_A_TIPO[grado] || 'Mayor';
+    const raizIdx = (SEMITONO_RAIZ[tonalidad] + offset) % 12;
+    return { grado, raiz: RAICES[raizIdx], tipo };
+  });
+}
+
+function voicingParaSVG(v) {
+  return { raiz: v.r, trastes: v.tr, dedos: v.d, barra: v.b, cifrado: v.c };
+}
+
+/* ============================================================
+   ESTADO
+   ============================================================ */
+let estado = 'parado';
+let compasSel = '';
+let praActual = null;
+let repiqueActual = null;
+let patronActual = null;
+let eventos = [];
+let totalCorcheasCompas = 0;
+let modo = '';
+let raizSel = '';
+let tipoSel = '';
+let progCatSel = '';
+let progIdSel = '';
+let tonoSel = '';
+
+let playingGen = 0;
+let schedulerTimer = null;
+let visualRAF = null;
+let nextEventTime = 0;
+let eventCursor = 0;
+let corcheasEnCompas = 0;
+let compasCounter = 0;
+const visualQueue = [];
+let _acordeVigente = null;
+let _progActual = [];
+
+let repsObjetivo = 0;
+let repsHechas = 0;
+
+const LOOKAHEAD = 0.15;
+const TICK_MS = 30;
+
+const selCompas = document.getElementById('selCompas');
+const selPRA = document.getElementById('selPRA');
+const selRepique = document.getElementById('selRepique');
+const selModo = document.getElementById('selModo');
+
+const selRaiz = document.getElementById('selRaiz');
+const selTipo = document.getElementById('selTipo');
+const selProgCat = document.getElementById('selProgCat');
+const selProg = document.getElementById('selProg');
+const selTono = document.getElementById('selTono');
+const contextAcorde = document.getElementById('contextAcorde');
+const contextProgresion = document.getElementById('contextProgresion');
+const progPreviewConfig = document.getElementById('progPreviewConfig');
+const patternEl = document.getElementById('pattern');
+const patternTitlePractica = document.getElementById('patternTitlePractica');
+const infoCompasNum = document.getElementById('infoCompasNum');
+const infoAcorde = document.getElementById('infoAcorde');
+const infoBpm = document.getElementById('infoBpm');
+const diagramsEl = document.getElementById('diagrams');
+const patternHeaderConfig = document.getElementById('patternHeaderConfig');
+const patternConfig = document.getElementById('patternConfig');
+const warnBanner = document.getElementById('warnBanner');
+const warnText = document.getElementById('warnText');
+const btnPracticar = document.getElementById('btnPracticar');
+
+const sBpm = document.getElementById('sBpm');
+const sVol = document.getElementById('sVol');
+const sBajo = document.getElementById('sBajo');
+const sDecay = document.getElementById('sDecay');
+const sFilter = document.getElementById('sFilter');
+const sDelay = document.getElementById('sDelay');
+const nBpm = document.getElementById('nBpm');
+const nVol = document.getElementById('nVol');
+const nBajo = document.getElementById('nBajo');
+const nDecay = document.getElementById('nDecay');
+const nFilter = document.getElementById('nFilter');
+const nDelay = document.getElementById('nDelay');
+const inpReps = document.getElementById('inpReps');
+const repsStatus = document.getElementById('repsStatus');
+
+function pedirPantallaCompleta() {
+  const el = document.documentElement;
+  if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+}
+function salirPantallaCompleta() {
+  if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+  else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+}
+
+/* ============================================================
+   POBLAR
+   ============================================================ */
+function poblarSelectores() {
+  const compases = compasesDisponibles();
+  selCompas.innerHTML = '<option value="">— Seleccionar —</option>' +
+    compases.map(c => `<option value="${c}">${c}</option>`).join('');
+
+  selRaiz.innerHTML = '<option value="">— Seleccionar —</option>' +
+    RAICES.map(r => `<option value="${r}">${r}</option>`).join('');
+  selTipo.innerHTML = '<option value="">— Seleccionar —</option>' +
+    ordenTipos.map(t => `<option value="${t}">${t}</option>`).join('');
+  selTono.innerHTML = '<option value="">— Seleccionar —</option>' +
+    RAICES.map(r => `<option value="${r}">${r}</option>`).join('');
+}
+
+function refrescarPRAsYRepiques() {
+  if (!compasSel) {
+    selPRA.innerHTML = '<option value="">— Seleccionar compás —</option>';
+    selRepique.innerHTML = '<option value="">— Seleccionar compás —</option>';
+    aplicarPatronActivo();
+    return;
+  }
+
+  const prasFiltrados = PRAS.filter(p => p.compas === compasSel);
+  const repiquesFiltrados = REPIQUES.filter(r => r.compas === compasSel);
+
+  if (!prasFiltrados.length) {
+    selPRA.innerHTML = '<option value="">— Sin PRA para ' + compasSel + ' —</option>';
+  } else {
+    selPRA.innerHTML = '<option value="">— Seleccionar —</option>' +
+      prasFiltrados.map((p, i) => `<option value="${i}">${p.nombre}</option>`).join('');
+  }
+
+  if (!repiquesFiltrados.length) {
+    selRepique.innerHTML = '<option value="">— Sin repiques —</option>';
+  } else {
+    selRepique.innerHTML = '<option value="">— Seleccionar —</option>' +
+      repiquesFiltrados.map((r, i) => `<option value="${i}">${r.nombre}</option>`).join('');
+  }
+}
+
+function aplicarPatronActivo() {
+  patronActual = repiqueActual || praActual || null;
+  if (!patronActual) {
+    eventos = [];
+    totalCorcheasCompas = 0;
+    patternHeaderConfig.textContent = 'Sin patrón seleccionado';
+    renderPatterns();
+    actualizarAdvertencia();
+    return;
+  }
+  eventos = parsearPatron(patronActual.celdas);
+  totalCorcheasCompas = eventos.reduce((s,e) => s + e.corcheas, 0);
+  patternHeaderConfig.innerHTML = `Patrón <b>${patronActual.nombre}</b> — Compás <b>${patronActual.compas}</b>`;
+  patternTitlePractica.innerHTML = `Patrón <b>${patronActual.nombre}</b> — Compás <b>${patronActual.compas}</b>`;
+  renderPatterns();
+  actualizarAdvertencia();
+}
+
+function queFalta() {
+  if (!compasSel) return 'el compás';
+  if (!praActual && !repiqueActual) return 'un PRA o un Repique';
+  if (!modo) return 'el modo';
+  if (modo === 'acorde') {
+    if (!raizSel) return 'la raíz';
+    if (!tipoSel) return 'el tipo';
+  } else {
+    if (!progCatSel) return 'la categoría';
+    if (!progIdSel) return 'la progresión';
+    if (!tonoSel) return 'la tonalidad';
+  }
+  return null;
+}
+
+function actualizarAdvertencia() {
+  const falta = queFalta();
+  if (falta) {
+    warnBanner.classList.remove('hidden');
+    warnText.textContent = 'Falta seleccionar ' + falta;
+    btnPracticar.disabled = true;
+  } else {
+    warnBanner.classList.add('hidden');
+    btnPracticar.disabled = false;
+  }
+}
+
+const cellEls = [];
+function renderPatterns() {
+  patternConfig.innerHTML = '';
+  patternEl.innerHTML = '';
+  cellEls.length = 0;
+  if (!patronActual) return;
+  patronActual.celdas.forEach((c) => {
+    const elC = document.createElement('div');
+    elC.className = 'cell ' + ((c === '—' || c === '–') ? 'dash' : 'arrow');
+    elC.innerHTML = contenidoCelda(c);
+    patternConfig.appendChild(elC);
+    const elP = document.createElement('div');
+    elP.className = 'cell ' + ((c === '—' || c === '–') ? 'dash' : 'arrow');
+    elP.innerHTML = contenidoCelda(c);
+    patternEl.appendChild(elP);
+    cellEls.push(elP);
+  });
+}
+
+/* Genera HTML de un golpe (flecha + modificador/acento arriba) */
+function flechaHTML(flecha, modificador, acentoStr) {
+  const acento = acentoStr === '>';
+  let simbolo = '';
+  if (modificador && acento) simbolo = modificador + '>';
+  else if (modificador) simbolo = modificador;
+  else if (acento) simbolo = '>';
+  const simboloHTML = simbolo ? `<span class="simbolo-arriba">${simbolo}</span>` : '';
+  return `<span class="flecha">${flecha}</span>${simboloHTML}`;
+}
+
+function contenidoCelda(c) {
+  if (c === '—' || c === '–') return '<span class="flecha">—</span>';
+  const cc = normalizarCelda(c);
+
+  // Dos golpes en una corchea
+  const mDoble = cc.match(/^([↓↑])([rax]?)(>?)([↓↑])([rax]?)(>?)$/);
+  if (mDoble) {
+    const g1 = `<div class="flecha-item">${flechaHTML(mDoble[1], mDoble[2], mDoble[3])}</div>`;
+    const g2 = `<div class="flecha-item">${flechaHTML(mDoble[4], mDoble[5], mDoble[6])}</div>`;
+    return `<div class="flecha-par">${g1}${g2}</div>`;
+  }
+
+  // Un solo golpe
+  const m = cc.match(/^([↓↑])([rax]?)(>?)$/);
+  if (!m) return `<span class="flecha">${c}</span>`;
+  return flechaHTML(m[1], m[2], m[3]);
+}
+
+function setInfoCompas(n) { infoCompasNum.textContent = String(n); }
+function setInfoAcorde(n)  { infoAcorde.textContent = n; }
+function setInfoBpm(n)     { infoBpm.textContent = String(n); }
+
+let highlightToken = 0;
+function highlightCells(indices, corcheas, corcheaDur) {
+  const myToken = ++highlightToken;
+  const arrowIndices = indices.filter(i => patronActual &&
+    (patronActual.celdas[i] !== '—' && patronActual.celdas[i] !== '–'));
+  cellEls.forEach(el => el.classList.remove('active'));
+  arrowIndices.forEach(i => cellEls[i]?.classList.add('active'));
+  const totalMs = corcheas * corcheaDur * 1000;
+  setTimeout(() => {
+    if (myToken !== highlightToken) return;
+    arrowIndices.forEach(i => cellEls[i]?.classList.remove('active'));
+  }, totalMs);
+}
+
+function renderDiagramas() {
+  diagramsEl.innerHTML = '';
+  let items = [];
+  if (modo === 'acorde') {
+    const v = buscarVoicing(raizSel, tipoSel);
+    if (v) items = [{ voicing: v, grado: null, nombre: v.c, orden: 0 }];
+  } else if (modo === 'progresion') {
+    items = _progActual.map((paso, i) => {
+      const v = buscarVoicing(paso.raiz, paso.tipo);
+      return v ? { voicing: v, grado: paso.grado, nombre: v.c, orden: i } : null;
+    }).filter(Boolean);
+  }
+  if (!items.length) {
+    diagramsEl.innerHTML = '<div class="empty-msg">Sin diagramas para esta selección.</div>';
+    return;
+  }
+  const distribucion = distribuirEnFilas(items.length);
+  let cursor = 0;
+  distribucion.forEach((cantidad) => {
+    const fila = document.createElement('div');
+    fila.className = 'diagram-row';
+    for (let i = 0; i < cantidad; i++) {
+      const item = items[cursor++];
+      const card = document.createElement('div');
+      card.className = 'diagram-card';
+      card.dataset.orden = item.orden;
+      if (item.grado) {
+        const g = document.createElement('div');
+        g.className = 'grado'; g.textContent = item.grado;
+        card.appendChild(g);
+      }
+      const svgWrap = document.createElement('div');
+      svgWrap.innerHTML = generarSVG(voicingParaSVG(item.voicing));
+      if (svgWrap.firstChild) card.appendChild(svgWrap.firstChild);
+      const nm = document.createElement('div');
+      nm.className = 'nombre'; nm.textContent = item.nombre;
+      card.appendChild(nm);
+      fila.appendChild(card);
+    }
+    diagramsEl.appendChild(fila);
+  });
+}
+function marcarDiagramaActual(idx) {
+  const cards = diagramsEl.querySelectorAll('.diagram-card');
+  cards.forEach(c => {
+    const orden = parseInt(c.dataset.orden, 10);
+    c.classList.toggle('current', orden === idx);
+  });
+}
+
+function formatearNum(key, v) {
+  if (key === 'decay') return parseFloat(v).toFixed(1);
+  return String(Math.round(parseFloat(v)));
+}
+function syncPair(sl, inp, key) { inp.value = formatearNum(key, sl.value); }
+function actualizarMotor() {
+  volumen = parseInt(sVol.value, 10) / 100;
+  volumenBajo = parseInt(sBajo.value, 10) / 100;
+  if (masterGain) masterGain.gain.value = volumen;
+  if (fxBus) fxBus.gain.value = volumen;
+  if (metroBus) metroBus.gain.value = volumen;
+  if (bajoBus) bajoBus.gain.value = volumenBajo;
+  setInfoBpm(sBpm.value);
+}
+function aplicarNumero(sl, inp, key) {
+  const min = parseFloat(sl.min), max = parseFloat(sl.max), step = parseFloat(sl.step);
+  let raw = parseFloat(String(inp.value).replace(',', '.'));
+  if (!isFinite(raw)) { syncPair(sl, inp, key); return; }
+  raw = Math.min(max, Math.max(min, raw));
+  if (step > 0) {
+    raw = Math.round(raw / step) * step;
+    const dec = (String(step).split('.')[1] || '').length;
+    raw = parseFloat(raw.toFixed(dec));
+  }
+  sl.value = String(raw);
+  inp.value = formatearNum(key, raw);
+  actualizarMotor();
+}
+function conectarSlider(sl, inp, key) {
+  sl.addEventListener('input', () => { inp.value = formatearNum(key, sl.value); actualizarMotor(); });
+  inp.addEventListener('focus', () => setTimeout(() => inp.select(), 0));
+  inp.addEventListener('blur', () => aplicarNumero(sl, inp, key));
+  inp.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); inp.blur(); }
+    if (e.key === 'Escape') { syncPair(sl, inp, key); inp.blur(); }
+  });
+}
+conectarSlider(sBpm, nBpm, 'bpm');
+conectarSlider(sVol, nVol, 'vol');
+conectarSlider(sBajo, nBajo, 'bajo');
+conectarSlider(sDecay, nDecay, 'decay');
+conectarSlider(sFilter, nFilter, 'filter');
+conectarSlider(sDelay, nDelay, 'delay');
+
+inpReps.addEventListener('input', () => {
+  let v = parseInt(inpReps.value, 10);
+  if (isNaN(v) || v < 0) v = 0;
+  repsObjetivo = v;
+  if (estado === 'parado') { repsHechas = 0; actualizarRepsStatus(); }
+});
+function actualizarRepsStatus() {
+  if (repsObjetivo === 0) {
+    repsStatus.textContent = '∞';
+    repsStatus.classList.remove('completado');
+  } else if (repsHechas >= repsObjetivo) {
+    repsStatus.textContent = '¡Listo!';
+    repsStatus.classList.add('completado');
+  } else {
+    repsStatus.textContent = `${repsHechas} / ${repsObjetivo}`;
+    repsStatus.classList.remove('completado');
+  }
+}
+
+function refrescarProgs() {
+  if (!progCatSel) {
+    selProg.innerHTML = '<option value="">— Seleccionar categoría —</option>';
+    progPreviewConfig.textContent = '—';
+    progPreviewConfig.classList.remove('no-aplica');
+    return;
+  }
+  const obj = getProgObj(progCatSel);
+  if (!obj) {
+    selProg.innerHTML = '<option value="">— Sin progresiones —</option>';
+    progPreviewConfig.textContent = '—';
+    return;
+  }
+  const ids = Object.keys(obj);
+  selProg.innerHTML = '<option value="">— Seleccionar —</option>' +
+    ids.map(id => {
+      const p = obj[id];
+      return `<option value="${id}">${p.labelBold}${p.labelLight}</option>`;
+    }).join('');
+  progPreviewConfig.textContent = '—';
+  progPreviewConfig.classList.remove('no-aplica');
+}
+function actualizarProgPreview() {
+  if (!progCatSel || !progIdSel) {
+    progPreviewConfig.textContent = '—';
+    progPreviewConfig.classList.remove('no-aplica');
+    return;
+  }
+  const obj = getProgObj(progCatSel);
+  const p = obj && obj[progIdSel];
+  if (!p) {
+    progPreviewConfig.textContent = '—';
+    progPreviewConfig.classList.remove('no-aplica');
+    return;
+  }
+  progPreviewConfig.textContent = p.labelLight.trim();
+  progPreviewConfig.classList.toggle('no-aplica', !!p.noAplica);
+}
+function actualizarContexto() {
+  if (modo === 'acorde') {
+    contextAcorde.style.display = '';
+    contextProgresion.style.display = 'none';
+  } else if (modo === 'progresion') {
+    contextAcorde.style.display = 'none';
+    contextProgresion.style.display = '';
+    if (progCatSel && progIdSel && tonoSel) {
+      _progActual = calcularProgresion(progIdSel, progCatSel, tonoSel);
+    }
+  } else {
+    contextAcorde.style.display = 'none';
+    contextProgresion.style.display = 'none';
+  }
+  renderDiagramas();
+  actualizarAdvertencia();
+}
+
+function corcheaDuracion() {
+  const bpm = parseInt(sBpm.value, 10);
+  return (60 / bpm) / 2;
+}
+function voicingActualParaCompas(compasIdx) {
+  if (modo === 'acorde') {
+    const v = buscarVoicing(raizSel, tipoSel);
+    return v ? { v, nombre: v.c, diagramIdx: 0 } : null;
+  } else {
+    if (!_progActual.length) return null;
+    const idx = compasIdx % _progActual.length;
+    const paso = _progActual[idx];
+    const v = buscarVoicing(paso.raiz, paso.tipo);
+    return v ? { v, nombre: v.c, grado: paso.grado, diagramIdx: idx } : null;
+  }
+}
+function schedulerTick(gen) {
+  if (gen !== playingGen) return;
+  while (nextEventTime < ctx.currentTime + LOOKAHEAD) {
+    if (!eventos.length) return;
+    const ev = eventos[eventCursor];
+    const corcheaDur = corcheaDuracion();
+    const eventDur = ev.corcheas * corcheaDur;
+    const esInicioCompas = (eventCursor === 0);
+    if (esInicioCompas) {
+      if (repsObjetivo > 0 && repsHechas >= repsObjetivo) {
+        setTimeout(() => { parar(); }, 0);
+        return;
+      }
+      if (compasCounter > 0) {
+        repsHechas++;
+        actualizarRepsStatus();
+      }
+      const ac = voicingActualParaCompas(compasCounter);
+      _acordeVigente = ac;
+      if (ac) {
+        visualQueue.push({
+          time: nextEventTime, tipo:'inicio-compas',
+          acordeNombre: ac.nombre, diagramIdx: ac.diagramIdx
+        });
+        const durCompas = totalCorcheasCompas * corcheaDur;
+        tocarBajo(ac.v, nextEventTime, durCompas);
+      }
+    }
+    if (metronomoActivo) {
+      // El metrónomo hace click en cada subdivisión de corchea
+      // Para eventos de 0.5 corcheas, cuenta dos clicks por corchea
+      // Simplificación: click por cada evento (alineado con golpe o silencio)
+      const isAccent = esInicioCompas;
+      // Si el evento cubre múltiples corcheas (silencio extendido), clickear cada una
+      const nClicks = Math.max(1, Math.round(ev.corcheas * 2));
+      // Para corcheas: nClicks = 2 (dos clicks por evento de 1 corchea)
+      // Para 0.5 corcheas: nClicks = 1
+      // Para 2 corcheas: nClicks = 4
+      // El metrónomo cuenta subdivisiones (semicorcheas) → corchea = 2 subdivisiones
+      const stepClick = corcheaDur / 2;
+      for (let c = 0; c < nClicks; c++) {
+        const tClick = nextEventTime + c * stepClick;
+        const acc = (esInicioCompas && c === 0);
+        scheduleMetro(tClick, acc);
+      }
+    }
+    if (ev.tipo === 'gesto' && _acordeVigente && _acordeVigente.v) {
+      tocarGesto(ev.flecha, _acordeVigente.v, nextEventTime, {
+        rasgueo: ev.rasgueo, acento: ev.acento
+      });
+    } else if (ev.tipo === 'efecto') {
+      tocarEfecto(ev.efecto, nextEventTime, { acento: ev.acento || false });
+    }
+    visualQueue.push({
+      time: nextEventTime, tipo:'celdas',
+      celdas: ev.celdas, corcheas: ev.corcheas, corcheaDur
+    });
+    if (esInicioCompas) corcheasEnCompas = 0;
+    corcheasEnCompas += ev.corcheas;
+    if (corcheasEnCompas >= totalCorcheasCompas - 1e-6) {
+      corcheasEnCompas = 0;
+      compasCounter++;
+    }
+    nextEventTime += eventDur;
+    eventCursor = (eventCursor + 1) % eventos.length;
+  }
+  schedulerTimer = setTimeout(() => schedulerTick(gen), TICK_MS);
+}
+function visualTick() {
+  if (!ctx) return;
+  const now = ctx.currentTime;
+  while (visualQueue.length && visualQueue[0].time <= now) {
+    const v = visualQueue.shift();
+    if (v.tipo === 'inicio-compas') {
+      setInfoCompas(compasCounter);
+      setInfoAcorde(v.acordeNombre);
+      marcarDiagramaActual(v.diagramIdx);
+    } else if (v.tipo === 'celdas') {
+      highlightCells(v.celdas, v.corcheas, v.corcheaDur);
+    }
+  }
+  visualRAF = requestAnimationFrame(visualTick);
+}
+function limpiarAudio() {
+  playingGen++;
+  if (schedulerTimer) { clearTimeout(schedulerTimer); schedulerTimer = null; }
+  if (visualRAF) { cancelAnimationFrame(visualRAF); visualRAF = null; }
+  visualQueue.length = 0;
+  highlightToken++;
+  releaseAll(0.09);
+  cellEls.forEach(el => el.classList.remove('active'));
+  marcarDiagramaActual(-1);
+}
+function tocar() {
+  if (estado === 'sonando') return;
+  if (!eventos.length) return;
+  if (modo === 'progresion') {
+    _progActual = calcularProgresion(progIdSel, progCatSel, tonoSel);
+    if (!_progActual.length) return;
+  }
+  renderDiagramas();
+  if (estado === 'parado') {
+    compasCounter = 0;
+    setInfoCompas(0);
+    corcheasEnCompas = 0;
+    repsHechas = 0;
+    actualizarRepsStatus();
+  }
+  initAudio(); actualizarMotor();
+  playingGen++;
+  const gen = playingGen;
+  nextEventTime = ctx.currentTime + 0.08;
+  eventCursor = 0;
+  visualQueue.length = 0;
+  _acordeVigente = null;
+  estado = 'sonando';
+  schedulerTick(gen);
+  visualTick();
+}
+function pausar() { if (estado !== 'sonando') return; limpiarAudio(); estado = 'pausado'; }
+function parar() {
+  limpiarAudio();
+  compasCounter = 0; corcheasEnCompas = 0;
+  setInfoCompas(0); setInfoAcorde('—');
+  estado = 'parado';
+}
+
+let metronomoActivo = false;
+try { metronomoActivo = localStorage.getItem(LS_METRO) === '1'; } catch (e) {}
+const btnMetro = document.getElementById('btnMetro');
+function renderMetroButton() {
+  btnMetro.classList.toggle('active', metronomoActivo);
+  btnMetro.textContent = (metronomoActivo ? '🔔' : '🔕') + ' Metrónomo';
+}
+btnMetro.addEventListener('click', () => {
+  metronomoActivo = !metronomoActivo;
+  try { localStorage.setItem(LS_METRO, metronomoActivo ? '1' : '0'); } catch (e) {}
+  renderMetroButton();
+});
+
+/* ============================================================
+   EVENTOS
+   ============================================================ */
+selCompas.addEventListener('change', () => {
+  compasSel = selCompas.value;
+  praActual = null;
+  repiqueActual = null;
+  parar();
+  refrescarPRAsYRepiques();
+  aplicarPatronActivo();
+  actualizarAdvertencia();
+});
+selPRA.addEventListener('change', () => {
+  const val = selPRA.value;
+  if (val === '') { praActual = null; }
+  else {
+    const idx = parseInt(val, 10);
+    const filtrados = PRAS.filter(p => p.compas === compasSel);
+    praActual = filtrados[idx] || null;
+    repiqueActual = null;
+    selRepique.value = '';
+  }
+  aplicarPatronActivo();
+  if (estado !== 'parado') parar();
+  actualizarAdvertencia();
+});
+selRepique.addEventListener('change', () => {
+  const val = selRepique.value;
+  if (val === '') { repiqueActual = null; }
+  else {
+    const idx = parseInt(val, 10);
+    const filtrados = REPIQUES.filter(r => r.compas === compasSel);
+    repiqueActual = filtrados[idx] || null;
+    praActual = null;
+    selPRA.value = '';
+  }
+  aplicarPatronActivo();
+  if (estado !== 'parado') parar();
+  actualizarAdvertencia();
+});
+selModo.addEventListener('change', () => {
+  modo = selModo.value;
+  raizSel = ''; tipoSel = '';
+  progCatSel = ''; progIdSel = ''; tonoSel = '';
+  selRaiz.value = '';
+  selTipo.value = '';
+  selProgCat.value = '';
+  refrescarProgs();
+  selTono.value = '';
+  actualizarContexto();
+  parar();
+});
+selRaiz.addEventListener('change', () => { raizSel = selRaiz.value; actualizarContexto(); });
+selTipo.addEventListener('change', () => { tipoSel = selTipo.value; actualizarContexto(); });
+selTono.addEventListener('change', () => { tonoSel = selTono.value; actualizarContexto(); });
+selProgCat.addEventListener('change', () => {
+  progCatSel = selProgCat.value;
+  progIdSel = '';
+  refrescarProgs();
+  actualizarContexto();
+});
+selProg.addEventListener('change', () => {
+  progIdSel = selProg.value;
+  actualizarProgPreview();
+  actualizarContexto();
+});
+
+btnPracticar.addEventListener('click', () => {
+  if (btnPracticar.disabled) return;
+  parar();
+  document.body.classList.add('practicando');
+  document.getElementById('viewConfig').classList.remove('active');
+  document.getElementById('viewPractica').classList.add('active');
+  actualizarContexto();
+  pedirPantallaCompleta();
+});
+document.getElementById('btnCambiar').addEventListener('click', () => {
+  parar();
+  salirPantallaCompleta();
+  document.body.classList.remove('practicando');
+  document.getElementById('viewPractica').classList.remove('active');
+  document.getElementById('viewConfig').classList.add('active');
+});
+document.getElementById('btnTocar').addEventListener('click', tocar);
+document.getElementById('btnPausa').addEventListener('click', pausar);
+document.getElementById('btnParar').addEventListener('click', parar);
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  compasSel = '';
+  praActual = null;
+  repiqueActual = null;
+  modo = '';
+  raizSel = '';
+  tipoSel = '';
+  progCatSel = '';
+  progIdSel = '';
+  tonoSel = '';
+  selCompas.value = '';
+  selModo.value = '';
+  selRaiz.value = '';
+  selTipo.value = '';
+  selProgCat.value = '';
+  selTono.value = '';
+  refrescarPRAsYRepiques();
+  refrescarProgs();
+  actualizarContexto();
+  parar();
+});
+
+function onFullscreenChange() {
+  const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+  if (!fsEl && document.body.classList.contains('practicando')) {
+    parar();
+    document.body.classList.remove('practicando');
+    document.getElementById('viewPractica').classList.remove('active');
+    document.getElementById('viewConfig').classList.add('active');
+  }
+}
+document.addEventListener('fullscreenchange', onFullscreenChange);
+document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('btnTheme').textContent = t === 'dark' ? '☀️' : '🌙';
+  try { localStorage.setItem('rasgueoTema', t); } catch(e){}
+}
+document.getElementById('btnTheme').addEventListener('click', () => {
+  const cur = document.documentElement.getAttribute('data-theme');
+  applyTheme(cur === 'dark' ? 'light' : 'dark');
+});
+(() => {
+  let t = 'light';
+  try {
+    t = localStorage.getItem('rasgueoTema')
+      || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  } catch(e){}
+  applyTheme(t);
+})();
+
+document.addEventListener('keydown', (e) => {
+  if (e.repeat) return;
+  const enInput = e.target.tagName === 'INPUT' && e.target.type !== 'range';
+  if (enInput) return;
+  const enPractica = document.getElementById('viewPractica').classList.contains('active');
+  if (!enPractica) return;
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (estado === 'sonando') pausar(); else tocar();
+  }
+  if (e.key === 'Escape') { e.preventDefault(); parar(); }
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+poblarSelectores();
+refrescarPRAsYRepiques();
+refrescarProgs();
+actualizarContexto();
+actualizarMotor();
+actualizarRepsStatus();
+renderMetroButton();
+</script>
+</body>
+</html>
