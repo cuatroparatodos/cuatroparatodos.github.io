@@ -3,172 +3,204 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Clases de Cuatro Venezolano — Ángel Martínez</title>
-<meta name="description" content="Recursos interactivos para el estudio del cuatro venezolano: afinador, diccionario de acordes y progresiones, y entrenador de rasgueo.">
+<title>Cuatro para todos — Ángel Martínez</title>
+<meta name="description" content="Aplicaciones para aprender cuatro venezolano: afinador, diccionario de acordes, entrenador de rasgueo y ejercicios progresivos.">
 <style>
   :root {
     --bg: #eaeef2; --surface: #ffffff; --surface-2: #f4f7fa;
     --ink: #2c3a45; --ink-soft: #5a6b7a; --ink-muted: #7e8e9d;
-    --line: #c5d0da;
+    --line: #c5d0da; --line-soft: #dde4ea;
     --accent: #5a7a94; --accent-hover: #46637a; --accent-soft: #dde6ee;
     --shadow: 0 2px 8px rgba(44, 58, 69, 0.06);
+    --shadow-hover: 0 6px 20px rgba(44, 58, 69, 0.12);
     --radius: 10px; --radius-lg: 14px;
   }
   [data-theme="dark"] {
     --bg: #14181c; --surface: #1e242a; --surface-2: #262e36;
     --ink: #e4eaef; --ink-soft: #a8b4c0; --ink-muted: #75828f;
-    --line: #39434c;
+    --line: #39434c; --line-soft: #2a333b;
     --accent: #8fb0cd; --accent-hover: #a9c4dc; --accent-soft: #2b3a47;
     --shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+    --shadow-hover: 0 6px 20px rgba(0, 0, 0, 0.5);
   }
-  * { box-sizing:border-box; }
-  html,body { margin:0; padding:0; min-height:100%; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; min-height: 100%; }
   body {
-    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
-    background:var(--bg); color:var(--ink);
-    min-height:100vh; display:flex; flex-direction:column;
-    transition:background .2s, color .2s;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg); color: var(--ink);
+    min-height: 100vh; display: flex; flex-direction: column;
+    transition: background .2s, color .2s;
   }
-  header {
-    padding:48px 22px 24px; text-align:center;
-    border-bottom:1px solid var(--line); background:var(--surface);
-    position:relative;
-  }
-  header h1 {
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size:38px; font-weight:700; margin:0 0 6px;
-    letter-spacing:-0.5px;
-  }
-  header .subtitle {
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size:17px; color:var(--ink-soft); margin:0 0 4px;
-  }
-  header .author {
-    font-family: Georgia, 'Times New Roman', serif;
-    font-style: italic; font-size:19px; color:var(--ink-muted);
-    margin:0;
-  }
-  header .theme-toggle {
-    position:absolute; top:18px; right:22px;
-    background:transparent; border:1px solid var(--line); color:var(--ink);
-    border-radius:var(--radius); padding:6px 10px; cursor:pointer; font-size:14px;
-  }
-  header .theme-toggle:hover { border-color:var(--accent); color:var(--accent); }
 
+  /* HEADER */
+  #appHeader {
+    padding: 56px 22px 40px; text-align: center;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+  #appHeader .title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 44px; font-weight: 700; margin: 0 0 10px;
+    letter-spacing: -1px; line-height: 1.1;
+  }
+  #appHeader .subtitle {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-style: italic;
+    font-size: 22px; color: var(--ink-soft); margin: 0;
+    letter-spacing: 0.3px;
+  }
+  #appHeader .theme-toggle {
+    position: absolute; top: 20px; right: 22px;
+    background: transparent; border: 1px solid var(--line); color: var(--ink);
+    border-radius: var(--radius); padding: 7px 12px;
+    cursor: pointer; font-size: 15px;
+    transition: border-color .15s, color .15s;
+  }
+  #appHeader .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* MAIN */
   main {
-    flex:1; padding:36px 22px 60px;
-    max-width:760px; width:100%; margin:0 auto;
+    flex: 1;
+    padding: 40px 22px 60px;
+    max-width: 720px; width: 100%; margin: 0 auto;
   }
-  .lead {
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size:18px; color:var(--ink-soft);
-    text-align:center; margin:0 0 36px; line-height:1.5;
+  .intro {
+    text-align: center;
+    font-size: 16px; color: var(--ink-soft);
+    margin: 0 0 36px; line-height: 1.6;
   }
 
-  .apps {
-    display:grid; gap:16px;
-    grid-template-columns:1fr;
+  /* TARJETAS */
+  .apps-grid {
+    display: grid; gap: 14px;
+    grid-template-columns: 1fr;
   }
-  @media (min-width:640px) {
-    .apps { grid-template-columns:1fr 1fr; }
-    .apps .app-card:first-child { grid-column:1 / -1; }
+  @media (min-width: 560px) {
+    .apps-grid { grid-template-columns: 1fr 1fr; }
   }
 
   .app-card {
-    display:flex; flex-direction:column;
-    background:var(--surface); border:1px solid var(--line);
-    border-radius:var(--radius-lg); padding:22px 22px 18px;
-    text-decoration:none; color:var(--ink);
-    transition:border-color .15s, transform .12s, box-shadow .15s;
-    box-shadow:var(--shadow);
+    display: flex; align-items: flex-start; gap: 16px;
+    padding: 20px 22px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    text-decoration: none; color: inherit;
+    transition: transform .15s, border-color .15s, box-shadow .2s;
+    box-shadow: var(--shadow);
+    cursor: pointer;
   }
   .app-card:hover {
-    border-color:var(--accent); transform:translateY(-2px);
-    box-shadow:0 6px 18px rgba(44, 58, 69, 0.10);
+    transform: translateY(-2px);
+    border-color: var(--accent);
+    box-shadow: var(--shadow-hover);
   }
-  .app-card .icon {
-    font-size:32px; line-height:1; margin-bottom:12px;
-  }
-  .app-card .name {
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size:22px; font-weight:700; margin:0 0 6px;
-    letter-spacing:-0.2px;
-  }
-  .app-card .desc {
-    font-size:14px; color:var(--ink-soft); line-height:1.5;
-    margin:0 0 14px; flex:1;
-  }
-  .app-card .cta {
-    font-size:13px; font-weight:600; color:var(--accent);
-    text-transform:uppercase; letter-spacing:1px;
-    display:inline-flex; align-items:center; gap:6px;
-  }
-  .app-card:hover .cta { color:var(--accent-hover); }
-  .app-card .cta::after { content:'→'; transition:transform .15s; }
-  .app-card:hover .cta::after { transform:translateX(3px); }
+  .app-card:active { transform: translateY(0); }
 
-  footer {
-    padding:24px 22px; text-align:center;
-    font-size:13px; color:var(--ink-muted);
-    border-top:1px solid var(--line); background:var(--surface);
+  .app-card .icono {
+    font-size: 32px; line-height: 1;
+    flex-shrink: 0;
+    margin-top: 2px;
   }
-  footer a { color:var(--accent); text-decoration:none; }
-  footer a:hover { text-decoration:underline; }
+  .app-card .info { flex: 1; min-width: 0; }
+  .app-card .nombre {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 19px; font-weight: 700;
+    color: var(--ink); margin: 0 0 4px;
+    letter-spacing: -0.3px;
+  }
+  .app-card .descripcion {
+    font-size: 13px; color: var(--ink-muted);
+    line-height: 1.5; margin: 0;
+  }
+  .app-card .arrow {
+    font-size: 18px; color: var(--ink-muted);
+    align-self: center; flex-shrink: 0;
+    transition: transform .15s, color .15s;
+  }
+  .app-card:hover .arrow {
+    color: var(--accent);
+    transform: translateX(3px);
+  }
+
+  /* FOOTER */
+  footer {
+    text-align: center;
+    padding: 24px 22px 32px;
+    font-size: 12px; color: var(--ink-muted);
+    letter-spacing: 0.3px;
+  }
+  footer a {
+    color: var(--accent); text-decoration: none;
+  }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 600px) {
+    #appHeader { padding: 40px 18px 28px; }
+    #appHeader .title { font-size: 32px; }
+    #appHeader .subtitle { font-size: 17px; }
+    main { padding: 28px 16px 40px; }
+    .intro { font-size: 14px; margin-bottom: 24px; }
+  }
 </style>
 </head>
 <body>
-  <header>
+  <header id="appHeader">
     <button class="theme-toggle" id="btnTheme" title="Tema">🌙</button>
-    <h1>Clases de Cuatro Venezolano</h1>
-    <p class="subtitle">Recursos interactivos para el estudio</p>
-    <p class="author">Ángel Martínez</p>
+    <h1 class="title">Cuatro para todos</h1>
+    <p class="subtitle">Ángel Martínez</p>
   </header>
 
   <main>
-    <p class="lead">
-      Tres herramientas para acompañar el estudio del cuatro venezolano:
-      afinación, armonía y ritmo.
-    </p>
+    <p class="intro">Aplicaciones para aprender y practicar el cuatro venezolano.</p>
 
-    <div class="apps">
+    <div class="apps-grid">
+
       <a class="app-card" href="apps/afinador/">
-        <div class="icon">🎼</div>
-        <h2 class="name">Afinador</h2>
-        <p class="desc">
-          Afina las cuatro cuerdas del instrumento con referencia tonal precisa.
-        </p>
-        <span class="cta">Abrir</span>
+        <div class="icono">🎵</div>
+        <div class="info">
+          <div class="nombre">Afinador</div>
+          <p class="descripcion">Afina tu cuatro con precisión</p>
+        </div>
+        <div class="arrow">→</div>
       </a>
 
       <a class="app-card" href="apps/diccionario/">
-        <div class="icon">📖</div>
-        <h2 class="name">Diccionario de acordes y progresiones</h2>
-        <p class="desc">
-          Consulta digitaciones, tipos de acordes y progresiones armónicas
-          típicas del repertorio.
-        </p>
-        <span class="cta">Abrir</span>
+        <div class="icono">📖</div>
+        <div class="info">
+          <div class="nombre">Diccionario</div>
+          <p class="descripcion">Acordes y progresiones</p>
+        </div>
+        <div class="arrow">→</div>
       </a>
 
       <a class="app-card" href="apps/rasgueo/">
-        <div class="icon">🎶</div>
-        <h2 class="name">Entrenador de rasgueo</h2>
-        <p class="desc">
-          Practica patrones rítmicos de acompañamiento y repiques con
-          metrónomo, control de tempo y diagramas de acordes.
-        </p>
-        <span class="cta">Abrir</span>
+        <div class="icono">🎸</div>
+        <div class="info">
+          <div class="nombre">Rasgueo</div>
+          <p class="descripcion">Entrenador de patrones de rasgueo</p>
+        </div>
+        <div class="arrow">→</div>
       </a>
+
+      <a class="app-card" href="apps/rasgueo-ejercicios/">
+        <div class="icono">🎯</div>
+        <div class="info">
+          <div class="nombre">Ejercicios de Rasgueo</div>
+          <p class="descripcion">Ejercicios progresivos con corrección</p>
+        </div>
+        <div class="arrow">→</div>
+      </a>
+
     </div>
   </main>
 
   <footer>
-    © <span id="year"></span> Ángel Martínez · Clases de cuatro venezolano
+    <p>© Ángel Martínez — Cuatro para todos</p>
   </footer>
 
 <script>
-  document.getElementById('year').textContent = new Date().getFullYear();
-
   function applyTheme(t) {
     document.documentElement.setAttribute('data-theme', t);
     document.getElementById('btnTheme').textContent = t === 'dark' ? '☀️' : '🌙';
